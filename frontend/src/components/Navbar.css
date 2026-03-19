@@ -20,6 +20,13 @@
   border-radius: 8px;
   object-fit: contain;
 }
+/* App Name */
+.navbar-app-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-left: 0.5rem;
+}
 
 /* Nav links */
 .navbar-links {
