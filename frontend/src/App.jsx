@@ -5,22 +5,16 @@ import './App.css';
  
 
 const Home = () => <main><h1>Welcome to the Property Management System</h1></main>;
+import MainRouter from './router/MainRouter';
+import './App.css';
+ 
+
+
  
 function App() {
   
-  const userRole = 'guest';
- 
   return (
-    <Router>
-      <div className="App">
-        <Navbar userRole={userRole} />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/contact" element={<Contact />} />
-          
-        </Routes>
-      </div>
-    </Router>
+    <MainRouter />
   );
 }
  
