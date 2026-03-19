@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import logo from '../assets/Logo.jpeg';
-import './Navbar.css';
 
 const Navbar = ({ userRole }) => {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -31,62 +30,76 @@ const Navbar = ({ userRole }) => {
   const links = navLinks[userRole] || navLinks.guest;
   const isGuest = !userRole || userRole === 'guest';
 
+  // helper function to close moble menu when a link is clicked 
+  const handleLinkClick = () => setMenuOpen(false);
+
   return (
-    <nav className="navbar">
-
-      {/* Logo */}
-      <div className="navbar-logo">
-        <Link to="/">
-          <img src={logo} alt="Property Management System" />
+    <nav className="navbar navbar-expand-md bg-white sticky-top shadow-sm border-bottom py-2 px-md-4">
+      <div className="container-fluid">
+        
+        {/* Logo */}
+        <Link className="navbar-brand" to="/" onClick={handleLinkClick}>
+          <img 
+            src={logo} 
+            alt="Property Management System" 
+            style={{ height: '50px', borderRadius: '8px', objectFit: 'contain' }} 
+          />
         </Link>
-      </div>
 
-      {/* Nav Links */}
-      <ul className={`navbar-links ${menuOpen ? 'open' : ''}`}>
-        {links.map((link) => (
-          <li key={link.path}>
-            <Link
-              to={link.path}
-              className={location.pathname === link.path ? 'active' : ''}
-              onClick={() => setMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
+        {/* Hamburger Toggle Button for Mobile */}
+        <button
+          className="navbar-toggler border-0 shadow-none"
+          type="button"
+          onClick={() => setMenuOpen(!menuOpen)}
+          aria-expanded={menuOpen}
+          aria-label="Toggle navigation"
+        >
+          <span className="navbar-toggler-icon"></span>
+        </button>
 
-        {/* Login + Sign Up inside mobile menu */}
-        {isGuest && (
-          <li className="navbar-auth-mobile">
-            <Link to="/login" className="btn-login" onClick={() => setMenuOpen(false)}>
-              Login
-            </Link>
-            <Link to="/signup" className="btn-signup" onClick={() => setMenuOpen(false)}>
-              Sign Up
-            </Link>
-          </li>
-        )}
-      </ul>
+        {/* Collapsible Content (Links & Auth) */}
+        <div className={`collapse navbar-collapse ${menuOpen ? 'show' : ''}`}>
+          
+          {/* Nav Links */}
+          <ul className="navbar-nav mx-auto mb-2 mb-md-0 gap-md-4">
+            {links.map((link) => {
+              const isActive = location.pathname === link.path;
+              return (
+                <li className="nav-item" key={link.path}>
+                  <Link
+                    to={link.path}
+                    className={`nav-link fw-medium transition-all ${isActive ? 'text-primary border-bottom border-primary border-2' : 'text-dark'}`}
+                    onClick={handleLinkClick}
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
 
-      {/* Login + Sign Up buttons — desktop only */}
-      {isGuest && (
-        <div className="navbar-auth">
-          <Link to="/login" className="btn-login">Login</Link>
-          <Link to="/signup" className="btn-signup">Sign Up</Link>
+          {/* Login + Sign Up Buttons */}
+          {isGuest && (
+            <div className="d-flex flex-column flex-md-row gap-2 mt-3 mt-md-0">
+              <Link 
+                to="/login" 
+                className="btn btn-outline-primary fw-semibold px-4" 
+                onClick={handleLinkClick}
+              >
+                Login
+              </Link>
+              <Link 
+                to="/signup" 
+                className="btn btn-primary fw-semibold px-4" 
+                onClick={handleLinkClick}
+              >
+                Sign Up
+              </Link>
+            </div>
+          )}
+          
         </div>
-      )}
-
-      {/* Hamburger for mobile */}
-      <button
-        className="navbar-hamburger"
-        onClick={() => setMenuOpen(!menuOpen)}
-        aria-label="Toggle menu"
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-
+      </div>
     </nav>
   );
 };
