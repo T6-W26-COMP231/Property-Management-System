@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
+import HeroSection from './components/HeroSection';
 import './App.css';
  
 
-const Home = () => <main><h1>Welcome to the Property Management System</h1></main>;
 const Contact = () => <main><h1>Contact Support</h1></main>;
  
 function App() {
@@ -15,7 +15,7 @@ function App() {
       <div className="App">
         <Navbar userRole={userRole} />
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<HeroSection />} />
           <Route path="/contact" element={<Contact />} />
           
         </Routes>
