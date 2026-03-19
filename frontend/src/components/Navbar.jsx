@@ -39,6 +39,7 @@ const Navbar = ({ userRole }) => {
         <Link to="/">
           <img src={logo} alt="Property Management System" />
         </Link>
+        <span className="navbar-app-name">T6PMS</span>
       </div>
 
       {/* Nav Links */}
