@@ -20,6 +20,7 @@ const MainRouter = () => {
           <Route path="/" element={<Home />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/profile"    element={<Profile />} />
+          <Route path="/messages"    element={<MessagesLayoutPage />} />
         
            <Route
         path="/landlord/*"
