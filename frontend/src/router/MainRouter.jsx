@@ -1,23 +1,37 @@
 // frontend/src/router/MainRouter.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { useUser } from "../context/UserContext";
 import Home from '../pages/Home';
-import ContactSupport from '../pages/ContactSupport';
-
+import Contact from '../pages/Contact';
+import MessagesLayoutPage from '../pages/MessageLayout';
+import LandlordDashboard from "../pages/Landlord/LandlordDashboard";
+import Profile from "../pages/ProfilePage";
 const MainRouter = () => {
-  const userRole = 'guest'; 
+
+  const { dbUser } = useUser();
+
+  const isLandlord = dbUser?.role === "landlord";
 
   return (
-    <Router>
+    
       <div className="App">
-        <Navbar userRole={userRole} />
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/contact" element={<ContactSupport />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/profile"    element={<Profile />} />
+          <Route path="/messages"    element={<MessagesLayoutPage />} />
+        
+           <Route
+        path="/landlord/*"
+        element={isLandlord ? <LandlordDashboard /> : <Navigate to="/" replace />}
+      />
         </Routes>
       </div>
-    </Router>
+      
+  
+
+    
   );
 };
 

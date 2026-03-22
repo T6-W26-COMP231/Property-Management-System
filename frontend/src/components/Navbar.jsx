@@ -1,95 +1,142 @@
-// frontend/src/components/Navbar.jsx
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+
 import logo from '../assets/Logo.jpeg';
-import './Navbar.css';
 
-const Navbar = ({ userRole }) => {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const location = useLocation();
+import { useNavigate, useLocation } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useUser } from "../context/UserContext";
 
-  // Define nav links based on the user's role
-  const navLinks = {
-    guest: [
-      { label: 'Home', path: '/' },
-      { label: 'Contact Support', path: '/contact' },
-    ],
-    landlord: [
-      { label: 'Dashboard', path: '/landlord/dashboard' },
-      { label: 'Messages', path: '/landlord/messages' },
-    ],
-    resident: [
-      { label: 'Dashboard', path: '/resident/dashboard' },
-      { label: 'Messages', path: '/resident/messages' },
-    ],
-    contractor: [
-      { label: 'Dashboard', path: '/contractor/dashboard' },
-      { label: 'Messages', path: '/contractor/messages' },
-    ],
-  };
+  const PUBLIC_NAV_ITEMS = [
+  { path: "/",        icon: "bi-house",   label: "Home"              },
+  { path: "/contact", icon: "bi-headset", label: "Technical Support" },
+];
 
-  const links = navLinks[userRole] || navLinks.guest;
-  const isGuest = !userRole || userRole === 'guest';
+// Shown when logged in (resident & contractor)
+const PRIVATE_NAV_ITEMS = [
+  { path: "/",         icon: "bi-house",         label: "Home"              },
+  { path: "/messages", icon: "bi-chat-dots",     label: "Messages"          },
+  { path: "/cotact",  icon: "bi-headset",       label: "Technical Support" },
+  { path: "/profile",  icon: "bi-person-circle", label: "Profile"           },
+];
 
-  return (
-    <nav className="navbar">
+// Shown when logged in as landlord — Home goes to welcome page
+const LANDLORD_NAV_ITEMS = [
+  { path: "/",         icon: "bi-house",         label: "Home"              },
+  { path: "/messages", icon: "bi-chat-dots",     label: "Messages"          },
+  { path: "/contact",  icon: "bi-headset",       label: "Technical Support" },
+  { path: "/profile",  icon: "bi-person-circle", label: "Profile"           },
+];
 
-      {/* Logo */}
-      <div className="navbar-logo">
-        <Link to="/">
-          <img src={logo} alt="Property Management System" />
-        </Link>
-        <span className="navbar-app-name">T6PMS</span>
-      </div>
+// Extra — shown only for landlords
+const LANDLORD_NAV_ITEM = { path: "/landlord", icon: "bi-speedometer2", label: "My Dashboard" };
 
-      {/* Nav Links */}
-      <ul className={`navbar-links ${menuOpen ? 'open' : ''}`}>
-        {links.map((link) => (
-          <li key={link.path}>
-            <Link
-              to={link.path}
-              className={location.pathname === link.path ? 'active' : ''}
-              onClick={() => setMenuOpen(false)}
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
-
-        {/* Login + Sign Up inside mobile menu */}
-        {isGuest && (
-          <li className="navbar-auth-mobile">
-            <Link to="/login" className="btn-login" onClick={() => setMenuOpen(false)}>
-              Login
-            </Link>
-            <Link to="/signup" className="btn-signup" onClick={() => setMenuOpen(false)}>
-              Sign Up
-            </Link>
-          </li>
-        )}
-      </ul>
-
-      {/* Login + Sign Up buttons — desktop only */}
-      {isGuest && (
-        <div className="navbar-auth">
-          <Link to="/login" className="btn-login">Login</Link>
-          <Link to="/signup" className="btn-signup">Sign Up</Link>
-        </div>
-      )}
-
-      {/* Hamburger for mobile */}
-      <button
-        className="navbar-hamburger"
-        onClick={() => setMenuOpen(!menuOpen)}
-        aria-label="Toggle menu"
-      >
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-
-    </nav>
-  );
+const ROLE_BADGES = {
+  resident:   "success",
+  landlord:   "primary",
+  contractor: "warning",
 };
 
-export default Navbar;
+export default function NavBar() {
+  const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
+  const { dbUser }   = useUser();
+  const navigate     = useNavigate();
+  const location     = useLocation();
+
+  const isActive = (path) =>
+    location.pathname === path || location.pathname.startsWith(path + "/");
+
+  // Build nav items based on role
+  const navItems = isAuthenticated
+    ? dbUser?.role === "landlord"
+      ? [...LANDLORD_NAV_ITEMS, LANDLORD_NAV_ITEM]
+      : PRIVATE_NAV_ITEMS
+    : PUBLIC_NAV_ITEMS;
+
+  return (
+    <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
+      <div className="container-fluid">
+
+        {/* Logo */}
+        <span
+          className="navbar-brand fw-bold"
+          style={{ cursor: "pointer" }}
+          onClick={() => navigate("/")}
+        >
+          <img
+    src={logo}
+    alt="Logo"
+    style={{ height: "30px", marginRight: "8px" }}
+  />
+          T6PMS
+        </span>
+
+        {/* Mobile toggle */}
+        <button
+          className="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#mainNav"
+        >
+          <span className="navbar-toggler-icon" />
+        </button>
+
+        <div className="collapse navbar-collapse" id="mainNav">
+
+          {/* Nav links */}
+          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+            {navItems.map((item) => (
+              <li key={item.path} className="nav-item">
+                <button
+                  className={`nav-link btn btn-link text-white text-decoration-none ${isActive(item.path) ? "fw-bold border-bottom border-2 border-white" : "opacity-75"}`}
+                  onClick={() => navigate(item.path)}
+                >
+                  <i className={`bi ${item.icon} me-1`} />
+                  {item.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+
+          {/* Right side */}
+          <div className="d-flex align-items-center gap-2">
+            {isAuthenticated && dbUser ? (
+              <>
+                <div
+                  className="d-flex align-items-center gap-2"
+                  style={{ cursor: "pointer" }}
+                  onClick={() => navigate("/profile")}
+                >
+                  <span className={`badge bg-${ROLE_BADGES[dbUser.role]}`}>
+                    {dbUser.role.charAt(0).toUpperCase() + dbUser.role.slice(1)}
+                  </span>
+                  <span className="text-white fw-semibold small">{dbUser.name}</span>
+                </div>
+                <button
+                  className="btn btn-outline-light btn-sm"
+                  onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+                >
+                  <i className="bi bi-box-arrow-right me-1" />Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="btn btn-outline-light btn-sm"
+                  onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: "login" } })}
+                >
+                  <i className="bi bi-box-arrow-in-right me-1" />Sign In
+                </button>
+                <button
+                  className="btn btn-light btn-sm fw-semibold"
+                  onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: "signup" } })}
+                >
+                  <i className="bi bi-person-plus me-1" />Sign Up
+                </button>
+              </>
+            )}
+          </div>
+
+        </div>
+      </div>
+    </nav>
+  );
+}
