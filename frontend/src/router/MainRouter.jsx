@@ -5,8 +5,8 @@ import { useUser } from "../context/UserContext";
 import Home from '../pages/Home';
 import Contact from '../pages/Contact';
 import MessagesLayoutPage from '../pages/MessageLayout';
-import PropertyDashboard from '../pages/PropertyDashboard';
-
+import ProfilePage       from "../pages/ProfilePage";
+import LandlordDashboard from "../pages/Landlord/LandlordDashboard";
 const MainRouter = () => {
 
   const { dbUser } = useUser();
@@ -18,9 +18,13 @@ const MainRouter = () => {
       <div className="App">
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/landlord/dashboard" element={<PropertyDashboard />} />
-          <Route path='landlord/messages' element={<MessagesLayoutPage />} />
+          <Route path="/contact" element={<Contact />} />          
+          <Route path="/messages" element={<MessagesLayoutPage />} />
+          <Route path="/profile"   element={<ProfilePage />} />
+          <Route
+        path="/landlord/*"
+        element={isLandlord ? <LandlordDashboard /> : <Navigate to="/" replace />}
+      />
         </Routes>
       </div>
       

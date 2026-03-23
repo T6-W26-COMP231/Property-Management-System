@@ -1,6 +1,6 @@
-import { Schema, model } from "mongoose";
+const mongoose = require("mongoose");
 
-const maintenanceSchema = new Schema(
+const maintenanceSchema = new mongoose.Schema(
   {
     propertyId: {
       type: Schema.Types.ObjectId,
@@ -43,4 +43,4 @@ const maintenanceSchema = new Schema(
   }
 );
 
-export default model("Maintenance", maintenanceSchema);
+export default mongoose.model("Maintenance", maintenanceSchema);
