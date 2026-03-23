@@ -1,43 +1,38 @@
-import { Schema, model } from "mongoose";
+const mongoose = require("mongoose");
 
-const propertySchema = new Schema(
+const propertySchema = new mongoose.Schema(
   {
     landlordId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
+      type: String,
       required: [true, "Landlord ID is required"],
+      index: true
     },
-    residentId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-    address: {
+    name:     { type: String, required: true, trim: true },
+    
+    location: {
       type: String,
       required: [true, "Address is required"],
       trim: true,
     },
+    units:    { type: Number, required: true, min: 1 },
+    // Cloudinary image
+    image: {
+      url:       { type: String, default: "" },
+      publicId:  { type: String, default: "" }, // needed to delete from Cloudinary
+    },
+
+
     description: {
       type: String,
+      default: "",
       trim: true,
+  
     },
-    leaseDocumentUrl: {
-      type: String,
-      default: null,
-    },
-    leaseDocumentExpireDate: {
-      type: Date,
-      default: null,
-    },
-    rentStatus: {
-      type: String,
-      enum: ["Paid", "Pending", "Overdue"],
-      default: "Pending",
-    },
+   
   },
   {
-    timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
+    timestamps: true,
   }
 );
 
-export default model("Property", propertySchema);
+module.exports = mongoose.model("Property", propertySchema);

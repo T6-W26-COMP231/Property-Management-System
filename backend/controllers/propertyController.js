@@ -1,51 +1,52 @@
-import { create, find, findById } from "../models/Property.model";
-import { findByIdAndUpdate, findById as _findById } from "../models/User.model";
+const cloudinary = require("cloudinary").v2;
+const Property   = require("../models/Property");
+
 
 // POST /api/properties
 // Landlord adds a new property
 const createProperty = async (req, res) => {
   try {
-    const landlordId = req.user._id; // from auth middleware
+    const landlordId = req.auth.payload.sub; // from auth middleware
+    const { name, location,address, units, description, imageBase64 } = req.body;
 
-    const { address, description } = req.body;
-
-    if (!address) {
-      return res.status(400).json({ message: "Address is required" });
+   if (!name || !location || !units)
+      return res.status(400).json({ error: "name, location and units are required" });
+    let image = { url: "", publicId: "" };
+    if (imageBase64) {
+      const uploaded = await cloudinary.uploader.upload(imageBase64, {
+        folder: "t6pms/properties",
+      });
+      image = { url: uploaded.secure_url, publicId: uploaded.public_id };
     }
 
-    const property = await create({
+    const property = await Property.create({
       landlordId,
-      address,
+      name,
+      location,
+      units: Number(units),
       description,
+      image,
     });
 
-    return res.status(201).json({
-      message: "Property created successfully",
-      property,
-    });
+    res.status(201).json(property);
   } catch (error) {
     console.error("createProperty error:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
+    return res.status(500).json({ error: "Failed to create property" });
   }
 };
 
 // GET /api/properties 
 // Landlord views all their properties
-const getLandlordProperties = async (req, res) => {
+const getProperties = async (req, res) => {
   try {
-    const landlordId = req.user._id;
+    const landlordId = req.auth.payload.sub;
 
-    const properties = await find({ landlordId })
-      .populate("residentId", "firstName lastName email phoneNumber")
-      .sort({ createdAt: -1 });
-
-    return res.status(200).json({
-      count: properties.length,
-      properties,
-    });
+    const properties = await Property.find({ landlordId }).sort({ createdAt: -1 });
+    res.json(properties);
+    
   } catch (error) {
     console.error("getLandlordProperties error:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
+    return res.status(500).json({ message: "Failed to fetch properties", error: error.message });
   }
 };
 
@@ -53,52 +54,78 @@ const getLandlordProperties = async (req, res) => {
 // Landlord or Resident views a specific property
 const getPropertyById = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.user._id;
-    const userRole = req.user.role;
-
-    const property = await findById(id)
-      .populate("landlordId", "firstName lastName email phoneNumber")
-      .populate("residentId", "firstName lastName email phoneNumber");
-
+   const landlordId = req.auth.payload.sub;
+   const property   = await Property.findById(req.params.id);
     if (!property) {
-      return res.status(404).json({ message: "Property not found" });
+      return res.status(404).json({ error: "Property not found" });
     }
 
-    // Access control: only the assigned landlord or resident can view
-    const isLandlord = property.landlordId._id.toString() === userId.toString();
-    const isResident =
-      property.residentId &&
-      property.residentId._id.toString() === userId.toString();
+    if (property.landlordId !== landlordId)
+      return res.status(403).json({ error: "Access denied" });
 
-    if (!isLandlord && !isResident) {
-      return res.status(403).json({ message: "Access denied" });
-    }
-
-    return res.status(200).json({ property });
-  } catch (error) {
-    console.error("getPropertyById error:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
+    res.json(property);
+  } catch (err) {
+    console.error("getPropertyById error:", err);
+    res.status(500).json({ error: "Failed to fetch property" });
   }
 };
 
+const updateProperty = async (req, res) => {
+  try {
+    const landlordId = req.auth.payload.sub;
+    const property   = await Property.findById(req.params.id);
+
+    if (!property)
+      return res.status(404).json({ error: "Property not found" });
+    if (property.landlordId !== landlordId)
+      return res.status(403).json({ error: "Access denied" });
+
+    const { name, location, units, description, imageBase64 } = req.body;
+
+    // Upload new image to Cloudinary if a new one is provided
+    if (imageBase64) {
+      // Delete old image from Cloudinary if exists
+      if (property.image?.publicId) {
+        await cloudinary.uploader.destroy(property.image.publicId);
+      }
+      const uploaded = await cloudinary.uploader.upload(imageBase64, {
+        folder: "t6pms/properties",
+      });
+      property.image = { url: uploaded.secure_url, publicId: uploaded.public_id };
+    }
+
+    if (name)        property.name        = name;
+    if (location)    property.location    = location;
+    if (units)       property.units       = Number(units);
+    if (description !== undefined) property.description = description;
+
+    await property.save();
+    res.json(property);
+  } catch (err) {
+    console.error("updateProperty error:", err);
+    res.status(500).json({ error: "Failed to update property" });
+  }
+};
 //DELETE /api/properties/:id
 // Landlord deletes a property
 const deleteProperty = async (req, res) => {
   try {
     const { id } = req.params;
-    const landlordId = req.user._id;
+    const landlordId = req.auth.payload.sub;
 
-    const property = await findById(id);
+    const property = await Property.findById(id);
 
     if (!property) {
-      return res.status(404).json({ message: "Property not found" });
+      return res.status(404).json({ error: "Property not found" });
     }
 
-    if (property.landlordId.toString() !== landlordId.toString()) {
-      return res.status(403).json({ message: "Access denied: not your property" });
-    }
+    if (property.landlordId !== landlordId)
+      return res.status(403).json({ error: "Access denied" });
 
+    // Delete image from Cloudinary
+    if (property.image?.publicId) {
+      await cloudinary.uploader.destroy(property.image.publicId);
+    }
     // If a resident is assigned, clear their assignedProperty reference
     if (property.residentId) {
       await findByIdAndUpdate(property.residentId, {
@@ -106,106 +133,23 @@ const deleteProperty = async (req, res) => {
       });
     }
 
-    await property.deleteOne();
+    await Property.findByIdAndDelete(req.params.id);;
 
     return res.status(200).json({ message: "Property deleted successfully" });
   } catch (error) {
     console.error("deleteProperty error:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
+    return res.status(500).json({ error: "Server error", error: error.message });
   }
 };
 
-//PUT /api/properties/:id/assign
-// Landlord assigns a resident and uploads lease document
-const assignResident = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const landlordId = req.user._id;
 
-    const { residentId, leaseDocumentUrl, leaseDocumentExpireDate } = req.body;
 
-    const property = await findById(id);
 
-    if (!property) {
-      return res.status(404).json({ message: "Property not found" });
-    }
-
-    if (property.landlordId.toString() !== landlordId.toString()) {
-      return res.status(403).json({ message: "Access denied: not your property" });
-    }
-
-    // Validate that the resident exists and has the Resident role
-    const resident = await _findById(residentId);
-
-    if (!resident) {
-      return res.status(404).json({ message: "Resident not found" });
-    }
-
-    if (resident.role !== "Resident") {
-      return res.status(400).json({ message: "The specified user is not a Resident" });
-    }
-
-    // Update the property
-    property.residentId = residentId;
-    if (leaseDocumentUrl) property.leaseDocumentUrl = leaseDocumentUrl;
-    if (leaseDocumentExpireDate) property.leaseDocumentExpireDate = leaseDocumentExpireDate;
-    await property.save();
-
-    // Update resident's assignedProperty
-    await findByIdAndUpdate(residentId, {
-      "profileDetails.assignedProperty": property._id,
-    });
-
-    const updated = await findById(id)
-      .populate("residentId", "firstName lastName email");
-
-    return res.status(200).json({
-      message: "Resident assigned successfully",
-      property: updated,
-    });
-  } catch (error) {
-    console.error("assignResident error:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-//GET /api/properties/:id/rent-status
-// Landlord views the rent status of a specific property
-const getRentStatus = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const landlordId = req.user._id;
-
-    const property = await findById(id)
-      .select("address rentStatus residentId leaseDocumentExpireDate")
-      .populate("residentId", "firstName lastName email");
-
-    if (!property) {
-      return res.status(404).json({ message: "Property not found" });
-    }
-
-    if (property.landlordId && property.landlordId.toString() !== landlordId.toString()) {
-      return res.status(403).json({ message: "Access denied: not your property" });
-    }
-
-    return res.status(200).json({
-      propertyId: property._id,
-      address: property.address,
-      rentStatus: property.rentStatus,
-      resident: property.residentId,
-      leaseExpiry: property.leaseDocumentExpireDate,
-    });
-  } catch (error) {
-    console.error("getRentStatus error:", error);
-    return res.status(500).json({ message: "Server error", error: error.message });
-  }
-};
-
-export default {
+module.exports = {
   createProperty,
-  getLandlordProperties,
+  getProperties,
   getPropertyById,
   deleteProperty,
-  assignResident,
-  getRentStatus,
+  updateProperty,
+  
 };
