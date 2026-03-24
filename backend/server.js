@@ -4,7 +4,7 @@ const cors     = require("cors");
 const cloudinary = require('cloudinary').v2;
 
 // clean config files
-const { PORT, CLIENT_URL } = require("./config/config");
+const { PORT, CLIENT_URL, FRONTEND_URL } = require("./config/config");
 const connectDB = require("./config/db");
 
 const userRoutes    = require("./routes/users");
@@ -24,7 +24,8 @@ cloudinary.config({
 });
 
 
-app.use(cors({ origin: CLIENT_URL }));
+const allowedOrigins = [CLIENT_URL,FRONTEND_URL].filter(boolean);
+app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({limit: '10mb'}));
 
 app.use("/", indexRouter);
