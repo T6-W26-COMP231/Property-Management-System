@@ -29,6 +29,11 @@ const LANDLORD_NAV_ITEMS = [
 
 // Extra — shown only for landlords
 const LANDLORD_NAV_ITEM = { path: "/landlord", icon: "bi-speedometer2", label: "My Dashboard" };
+// Extra — shown only for residents
+const RESIDENT_NAV_ITEM  = { path: "/resident",  icon: "bi-speedometer2", label: "My Dashboard" };
+
+// Extra — shown only for contractors
+const CONTRACTOR_NAV_ITEM = { path: "/contractor", icon: "bi-speedometer2", label: "My Dashboard" };
 
 const ROLE_BADGES = {
   resident:   "success",
@@ -43,13 +48,22 @@ export default function NavBar() {
   const navigate     = useNavigate();
   const location     = useLocation();
 
-  const isActive = (path) =>
-    location.pathname === path || location.pathname.startsWith(path + "/");
-
+  const isActive = (path) => {
+      if (path === "/") return location.pathname === "/";
+    return location.pathname === path || location.pathname.startsWith(path + "/");
+  }
   // Build nav items based on role
+  const getDashboardItem = () => {
+    if (dbUser?.role === "landlord")    return LANDLORD_NAV_ITEM;
+    if (dbUser?.role === "resident")    return RESIDENT_NAV_ITEM;
+    if (dbUser?.role === "contractor")  return CONTRACTOR_NAV_ITEM;
+    return null;
+  };
+
+  const dashboardItem = getDashboardItem();
   const navItems = isAuthenticated
-    ? dbUser?.role === "landlord"
-      ? [...LANDLORD_NAV_ITEMS, LANDLORD_NAV_ITEM]
+    ? dashboardItem
+      ? [...(dbUser?.role === "landlord" ? LANDLORD_NAV_ITEMS : PRIVATE_NAV_ITEMS), dashboardItem]
       : PRIVATE_NAV_ITEMS
     : PUBLIC_NAV_ITEMS;
 
