@@ -24,7 +24,7 @@ cloudinary.config({
 });
 
 
-const allowedOrigins = [CLIENT_URL,FRONTEND_URL].filter(boolean);
+const allowedOrigins = [CLIENT_URL,FRONTEND_URL];
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({limit: '10mb'}));
 
