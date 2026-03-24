@@ -1,5 +1,6 @@
-
 import logo from '../assets/Logo.jpeg';
+import React, {useState} from 'react';
+import { Link } from 'react-router-dom';
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -36,6 +37,7 @@ const ROLE_BADGES = {
 };
 
 export default function NavBar() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false); //mobile menu state
   const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
   const { dbUser }   = useUser();
   const navigate     = useNavigate();
@@ -50,6 +52,13 @@ export default function NavBar() {
       ? [...LANDLORD_NAV_ITEMS, LANDLORD_NAV_ITEM]
       : PRIVATE_NAV_ITEMS
     : PUBLIC_NAV_ITEMS;
+
+
+    // function to toggle mobile menu
+    const toggleMenu = () => {
+      setIsMenuOpen(!isMenuOpen);
+    };
+
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
@@ -75,11 +84,12 @@ export default function NavBar() {
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#mainNav"
+          onClick={toggleMenu}
         >
-          <span className="navbar-toggler-icon" />
+          <span className="navbar-toggler-icon"></span>
         </button>
 
-        <div className="collapse navbar-collapse" id="mainNav">
+        <div className={`collapse navbar-collapse ${isMenuOpen ? 'show' : ''}`} id="mainNav">
 
           {/* Nav links */}
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
