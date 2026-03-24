@@ -9,8 +9,12 @@ const connectDB = require("./config/db");
 
 const userRoutes    = require("./routes/users");
 const propertyRoutes   = require("./routes/properties");
+const indexRouter      = require("./routes/index");
 const app    = express();
 const server = http.createServer(app);
+
+// Connect to the db
+connectDB();
 
 // ─── Cloudinary ───────────────────────────────────────────────────────────────
 cloudinary.config({
@@ -18,13 +22,12 @@ cloudinary.config({
   api_key:    process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
-// Connect to the db
-connectDB();
+
 
 app.use(cors({ origin: CLIENT_URL }));
-app.use(express.json());
+app.use(express.json({limit: '10mb'}));
 
-
+app.use("/", indexRouter);
 app.use("/api/users",    userRoutes);
 app.use("/api/properties", propertyRoutes);
 
