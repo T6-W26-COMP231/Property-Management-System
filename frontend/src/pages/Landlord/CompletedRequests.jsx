@@ -12,17 +12,18 @@ const PER_PAGE = 6;
 
 export default function CompletedRequests() {
   const [page, setPage] = useState(1);
+  const [requests, setRequests] = useState([]);
 
   // fetch function
   useEffect(() => {
     fetch("/mockData/completedRequests.json")
       .then((response) => response.json())
-      .then((data) => setProperties(data))
+      .then((data) => setRequests(data))
       .catch((error) => console.error("Error fetching completed requests:", error));
   }, []);
 
-  const totalPages = Math.ceil(COMPLETED_REQUESTS.length / PER_PAGE);
-  const paginated  = COMPLETED_REQUESTS.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const totalPages = Math.ceil(requests.length / PER_PAGE);
+  const paginated  = requests.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   return (
     <div className="p-4">
@@ -43,7 +44,7 @@ export default function CompletedRequests() {
             <i className="bi bi-check-circle-fill fs-3" />
           </div>
           <div>
-            <div className="fs-2 fw-bold">{COMPLETED_REQUESTS.length}</div>
+            <div className="fs-2 fw-bold">{requests.length}</div>
             <div className="opacity-75">Total Completed Requests</div>
           </div>
         </div>
