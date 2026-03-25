@@ -24,15 +24,18 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-
 const allowedOrigins = [CLIENT_URL,FRONTEND_URL];
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 app.use(express.json({limit: '10mb'}));
 
+
+// ─── Routes ─────────────────────────────────────────────────────────────────
 app.use("/", indexRouter);
 app.use("/api/users",    userRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/profile",      profileRoutes);
+
+
 // ─── Start Server ─────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(` Server is running on port ${PORT}`);
