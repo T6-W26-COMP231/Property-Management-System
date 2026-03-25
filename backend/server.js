@@ -12,6 +12,7 @@ const propertyRoutes   = require("./routes/properties");
 const indexRouter      = require("./routes/index");
 const app    = express();
 const server = http.createServer(app);
+const profileRoutes     = require("./routes/profile");
 
 // Connect to the db
 connectDB();
@@ -31,7 +32,7 @@ app.use(express.json({limit: '10mb'}));
 app.use("/", indexRouter);
 app.use("/api/users",    userRoutes);
 app.use("/api/properties", propertyRoutes);
-
+app.use("/api/profile",      profileRoutes);
 // ─── Start Server ─────────────────────────────────────────────────────────────
 server.listen(PORT, () => {
   console.log(` Server is running on port ${PORT}`);
