@@ -7,11 +7,13 @@ import Contact from '../pages/Contact';
 import MessagesLayoutPage from '../pages/MessageLayout';
 import ProfilePage       from "../pages/ProfilePage";
 import LandlordDashboard from "../pages/Landlord/LandlordDashboard";
+import ResidentDashboard from "../pages/resident/ResidentDashboard";
 const MainRouter = () => {
 
   const { dbUser } = useUser();
 
   const isLandlord = dbUser?.role === "landlord";
+  const isResident = dbUser?.role === "resident";
 
   return (
     
@@ -24,6 +26,10 @@ const MainRouter = () => {
           <Route
         path="/landlord/*"
         element={isLandlord ? <LandlordDashboard /> : <Navigate to="/" replace />}
+      />
+       <Route
+        path="/resident/*"
+        element={isResident ? <ResidentDashboard /> : <Navigate to="/" replace />}
       />
         </Routes>
       </div>
