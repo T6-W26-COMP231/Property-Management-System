@@ -1,86 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-// ── Fake data — all completed ─────────────────────────────────────────────────
-const COMPLETED_REQUESTS = [
-  {
-    id: 1,
-    subject:     "Heater not working",
-    description: "The heater in unit 3B was repaired and restored to full function.",
-    priority:    "emergency",
-    property:    "Maple Residences",
-    unit:        "3B",
-    residentName:"Alice Johnson",
-    residentImg: "https://placehold.co/40x40/FF6B6B/ffffff?text=AJ",
-    residentId:  "RES-001",
-    completedDate: "2026-03-12",
-    img:         "https://placehold.co/400x180/E74C3C/ffffff?text=Heater+Issue",
-  },
-  {
-    id: 2,
-    subject:     "Parking lot light out",
-    description: "Two parking lot lights were replaced and tested successfully.",
-    priority:    "standard",
-    property:    "Pine Valley Flats",
-    unit:        "Parking",
-    residentName:"Frank Lee",
-    residentImg: "https://placehold.co/40x40/54A0FF/ffffff?text=FL",
-    residentId:  "RES-006",
-    completedDate: "2026-03-10",
-    img:         "https://placehold.co/400x180/F39C12/ffffff?text=Parking+Light",
-  },
-  {
-    id: 3,
-    subject:     "Broken door hinge",
-    description: "Front door hinge on unit 2A was replaced and door realigned.",
-    priority:    "standard",
-    property:    "Oak Park Condos",
-    unit:        "2A",
-    residentName:"Sarah Brown",
-    residentImg: "https://placehold.co/40x40/1DD1A1/ffffff?text=SB",
-    residentId:  "RES-009",
-    completedDate: "2026-03-08",
-    img:         "https://placehold.co/400x180/27AE60/ffffff?text=Door+Hinge",
-  },
-  {
-    id: 4,
-    subject:     "Clogged drain",
-    description: "Bathroom drain in unit 6C was cleared and tested.",
-    priority:    "urgent",
-    property:    "Sunset Apartments",
-    unit:        "6C",
-    residentName:"Mike Turner",
-    residentImg: "https://placehold.co/40x40/FF9F43/ffffff?text=MT",
-    residentId:  "RES-010",
-    completedDate: "2026-03-06",
-    img:         "https://placehold.co/400x180/3498DB/ffffff?text=Clogged+Drain",
-  },
-  {
-    id: 5,
-    subject:     "Broken intercom",
-    description: "Building intercom system was repaired and all units tested.",
-    priority:    "urgent",
-    property:    "Cedar Grove Suites",
-    unit:        "Common",
-    residentName:"Nina Patel",
-    residentImg: "https://placehold.co/40x40/5F27CD/ffffff?text=NP",
-    residentId:  "RES-011",
-    completedDate: "2026-03-04",
-    img:         "https://placehold.co/400x180/8E44AD/ffffff?text=Intercom",
-  },
-  {
-    id: 6,
-    subject:     "Roof leak repair",
-    description: "Roof leak above unit 8D was patched and waterproofed.",
-    priority:    "emergency",
-    property:    "Willow Creek Manor",
-    unit:        "8D",
-    residentName:"Tom Garcia",
-    residentImg: "https://placehold.co/40x40/00D2D3/ffffff?text=TG",
-    residentId:  "RES-012",
-    completedDate: "2026-03-02",
-    img:         "https://placehold.co/400x180/C0392B/ffffff?text=Roof+Leak",
-  },
-];
+// Dummy data moved to mockData folder
 
 const PRIORITY_CONFIG = {
   standard:  { label: "Standard",  badge: "info",    icon: "bi-flag"                       },
@@ -92,9 +12,18 @@ const PER_PAGE = 6;
 
 export default function CompletedRequests() {
   const [page, setPage] = useState(1);
+  const [requests, setRequests] = useState([]);
 
-  const totalPages = Math.ceil(COMPLETED_REQUESTS.length / PER_PAGE);
-  const paginated  = COMPLETED_REQUESTS.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  // fetch function
+  useEffect(() => {
+    fetch("/mockData/completedRequests.json")
+      .then((response) => response.json())
+      .then((data) => setRequests(data))
+      .catch((error) => console.error("Error fetching completed requests:", error));
+  }, []);
+
+  const totalPages = Math.ceil(requests.length / PER_PAGE);
+  const paginated  = requests.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   return (
     <div className="p-4">
@@ -115,7 +44,7 @@ export default function CompletedRequests() {
             <i className="bi bi-check-circle-fill fs-3" />
           </div>
           <div>
-            <div className="fs-2 fw-bold">{COMPLETED_REQUESTS.length}</div>
+            <div className="fs-2 fw-bold">{requests.length}</div>
             <div className="opacity-75">Total Completed Requests</div>
           </div>
         </div>
