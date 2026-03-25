@@ -6,3 +6,16 @@ const checkJwt = auth({
 });
 
 module.exports = { checkJwt}
+
+// // TEMPORARY BYPASS FOR POSTMAN TESTING
+// const checkJwt = (req, res, next) => {
+//   // faking that a user is logged in
+//   req.auth = {
+//     payload: {
+//       sub: "auth0|postman-test-123"
+//     }
+//   };
+//   next();
+// };
+
+// module.exports = {checkJwt};
