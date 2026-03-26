@@ -9,6 +9,7 @@ import {
 import Alert from "../../components/Alert";
 import Toast from "../../components/Toast";
 import AssignmentSuccessAlert from "../../components/AssignmentSuccessAlert";
+import RentStatusPage from "./RentStatusPage";
 
 const DEFAULT_AVATAR = "https://placehold.co/48x48/cccccc/ffffff?text=?";
 
@@ -420,6 +421,7 @@ export default function PropertyManagementPage({ property, onBack }) {
   const [modalError,    setModalError]    = useState("");
   const [toast,         setToast]         = useState({ show: false, type: "success", message: "" });
   const [assignSuccess, setAssignSuccess] = useState({ show: false, residentName: "" });
+  const [showRentStatus,setShowRentStatus]= useState(false);
 
   const showToast = (type, message) => setToast({ show: true, type, message });
 
@@ -489,6 +491,16 @@ export default function PropertyManagementPage({ property, onBack }) {
   };
 
   return (
+    <>
+    {/* Navigate to Rent Status Page */}
+    {showRentStatus && (
+      <RentStatusPage
+        property={property}
+        onBack={() => setShowRentStatus(false)}
+      />
+    )}
+
+    {!showRentStatus && (
     <div className="p-4">
 
       {/* Header */}
@@ -502,6 +514,12 @@ export default function PropertyManagementPage({ property, onBack }) {
             <i className="bi bi-geo-alt me-1" />{property.location}
           </p>
         </div>
+        <button
+          className="btn btn-outline-success btn-sm"
+          onClick={() => setShowRentStatus(true)}
+        >
+          <i className="bi bi-cash-coin me-1" />Rent Status
+        </button>
         <button className="btn btn-success btn-sm" onClick={() => { setShowAssign(true); setModalError(""); }}>
           <i className="bi bi-person-plus me-1" />Assign Resident
         </button>
@@ -628,5 +646,7 @@ export default function PropertyManagementPage({ property, onBack }) {
         onClose={() => setAssignSuccess({ show: false, residentName: "" })}
       />
     </div>
+    )}
+    </>
   );
 }

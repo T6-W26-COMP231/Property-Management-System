@@ -192,4 +192,23 @@ const deleteAssignment = async (req, res) => {
   }
 };
 
-module.exports = { getAssignments, createAssignment, updateAssignment, deleteAssignment };
+// ── PATCH /api/assignments/:assignmentId/rent — toggle rent paid status ────────
+const updateRentStatus = async (req, res) => {
+  try {
+    const landlordId = req.auth.payload.sub;
+    const assignment = await Assignment.findById(req.params.assignmentId);
+
+    if (!assignment) return res.status(404).json({ error: "Assignment not found" });
+    if (assignment.landlordId !== landlordId) return res.status(403).json({ error: "Access denied" });
+
+    assignment.rentPaid = req.body.rentPaid;
+    await assignment.save();
+
+    res.json({ _id: assignment._id, rentPaid: assignment.rentPaid });
+  } catch (err) {
+    console.error("updateRentStatus error:", err);
+    res.status(500).json({ error: "Failed to update rent status" });
+  }
+};
+
+module.exports = { getAssignments, createAssignment, updateAssignment, deleteAssignment, updateRentStatus };

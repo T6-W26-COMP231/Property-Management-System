@@ -25,6 +25,9 @@ const AssignmentSchema = new mongoose.Schema(
       enum:    ["active", "expired", "terminated"],
       default: "active",
     },
+
+    // Rent payment status — manually managed by landlord
+    rentPaid: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

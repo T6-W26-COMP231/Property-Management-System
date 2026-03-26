@@ -6,14 +6,13 @@ const {
   createAssignment,
   updateAssignment,
   deleteAssignment,
+  updateRentStatus,
 } = require("../controllers/assignmentController");
 
-// Property-scoped routes
-router.get("/:propertyId",          checkJwt, getAssignments);
-router.post("/:propertyId",         checkJwt, createAssignment);
-
-// Assignment-scoped routes
-router.put("/:assignmentId",        checkJwt, updateAssignment);
-router.delete("/:assignmentId",     checkJwt, deleteAssignment);
+router.get("/:propertyId",              checkJwt, getAssignments);
+router.post("/:propertyId",             checkJwt, createAssignment);
+router.put("/:assignmentId",            checkJwt, updateAssignment);
+router.delete("/:assignmentId",         checkJwt, deleteAssignment);
+router.patch("/:assignmentId/rent",     checkJwt, updateRentStatus);
 
 module.exports = router;
