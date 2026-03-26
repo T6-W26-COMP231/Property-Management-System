@@ -6,6 +6,7 @@ import {
   updateProperty,
   deleteProperty,
 } from "../../services/api";
+import PropertyManagementPage from "./PropertyManagementPage";
 
 const PER_PAGE      = 6;
 const DEFAULT_IMAGE = "https://placehold.co/400x220/4A90D9/ffffff?text=No+Image";
@@ -31,9 +32,10 @@ export default function PropertyDashboard() {
   const [error,      setError]      = useState("");
 
   // Modal state
-  const [viewModal,   setViewModal]   = useState(null);  // property object
-  const [editModal,   setEditModal]   = useState(null);  // property object
-  const [addModal,    setAddModal]    = useState(false);
+  const [viewModal,      setViewModal]      = useState(null);
+  const [editModal,      setEditModal]      = useState(null);
+  const [addModal,       setAddModal]       = useState(false);
+  const [manageProperty, setManageProperty] = useState(null);
 
   // Form state (shared for add + edit)
   const [form,        setForm]        = useState(EMPTY_FORM);
@@ -148,8 +150,19 @@ export default function PropertyDashboard() {
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   // ── Render ───────────────────────────────────────────────────────────────────
+  // If a property is selected for management, show the management page
+  if (manageProperty) {
+    return (
+      <PropertyManagementPage
+        property={manageProperty}
+        onBack={() => setManageProperty(null)}
+      />
+    );
+  }
+
   return (
     <div className="p-4">
+
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -300,8 +313,11 @@ export default function PropertyDashboard() {
               </div>
               <div className="modal-footer">
                 <button className="btn btn-outline-secondary" onClick={closeAll}>Close</button>
-                <button className="btn btn-primary" onClick={() => { closeAll(); openEdit(viewModal); }}>
-                  <i className="bi bi-pencil me-1" />Edit Property
+                <button className="btn btn-success" onClick={() => {
+                  closeAll();
+                  setManageProperty(viewModal);
+                }}>
+                  <i className="bi bi-people me-1" />Property Management
                 </button>
               </div>
             </div>

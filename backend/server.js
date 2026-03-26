@@ -1,21 +1,18 @@
+require("dotenv").config();
 const express  = require("express");
 const http     = require("http");
+const mongoose = require("mongoose");
 const cors     = require("cors");
-const cloudinary = require('cloudinary').v2;
+const cloudinary = require("cloudinary").v2;
 
-// clean config files
-const { PORT, CLIENT_URL, FRONTEND_URL } = require("./config/config");
-const connectDB = require("./config/db");
+const userRoutes        = require("./routes/users");
+const propertyRoutes    = require("./routes/properties");
+const profileRoutes     = require("./routes/profile");
+const assignmentRoutes  = require("./routes/assignments");
 
-const userRoutes    = require("./routes/users");
-const propertyRoutes   = require("./routes/properties");
-const indexRouter      = require("./routes/index");
+
 const app    = express();
 const server = http.createServer(app);
-const profileRoutes     = require("./routes/profile");
-
-// Connect to the db
-connectDB();
 
 // ─── Cloudinary ───────────────────────────────────────────────────────────────
 cloudinary.config({
@@ -24,19 +21,37 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const allowedOrigins = [CLIENT_URL,FRONTEND_URL];
-app.use(cors({ origin: allowedOrigins, credentials: true }));
-app.use(express.json({limit: '10mb'}));
+// ─── Middleware ───────────────────────────────────────────────────────────────
+app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
+app.use(express.json({ limit: "10mb" })); // increased for base64 images
+
+// ─── REST Routes ──────────────────────────────────────────────────────────────
+app.use("/api/users",        userRoutes);
 
 
 // ─── Routes ─────────────────────────────────────────────────────────────────
 app.use("/", indexRouter);
 app.use("/api/users",    userRoutes);
 app.use("/api/properties", propertyRoutes);
+app.use("/api/properties",   propertyRoutes);
 app.use("/api/profile",      profileRoutes);
 
 
+app.use("/api/assignments",  assignmentRoutes);
+
+
+
+
 // ─── Start Server ─────────────────────────────────────────────────────────────
-server.listen(PORT, () => {
-  console.log(` Server is running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("✅ MongoDB connected");
+    server.listen(PORT, () => console.log(`🚀 Server on http://localhost:${PORT}`));
+  })
+  .catch((err) => {
+    console.error("❌ MongoDB error:", err.message);
+    process.exit(1);
+  });
