@@ -25,14 +25,17 @@ cloudinary.config({
 app.use(cors({ origin: process.env.CLIENT_URL || "http://localhost:5173" }));
 app.use(express.json({ limit: "10mb" })); // increased for base64 images
 
-// ─── REST Routes ──────────────────────────────────────────────────────────────
-app.use("/api/users",        userRoutes);
 
-app.use("/api/properties",   propertyRoutes);
+const allowedOrigins = [CLIENT_URL,FRONTEND_URL];
+app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(express.json({limit: '10mb'}));
+
+
+// ─── Routes ─────────────────────────────────────────────────────────────────
+app.use("/", indexRouter);
+app.use("/api/users",    userRoutes);
+app.use("/api/properties", propertyRoutes);
 app.use("/api/profile",      profileRoutes);
-app.use("/api/assignments",  assignmentRoutes);
-
-
 
 
 // ─── Start Server ─────────────────────────────────────────────────────────────
