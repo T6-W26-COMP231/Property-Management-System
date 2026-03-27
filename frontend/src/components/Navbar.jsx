@@ -15,7 +15,7 @@ import { useUser } from "../context/UserContext";
 const PRIVATE_NAV_ITEMS = [
   { path: "/",         icon: "bi-house",         label: "Home"              },
   { path: "/messages", icon: "bi-chat-dots",     label: "Messages"          },
-  { path: "/cotact",  icon: "bi-headset",       label: "Technical Support" },
+  { path: "/contact",  icon: "bi-headset",       label: "Technical Support" },
   { path: "/profile",  icon: "bi-person-circle", label: "Profile"           },
 ];
 
