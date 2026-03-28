@@ -1,46 +1,44 @@
 const mongoose = require("mongoose");
 
-const maintenanceSchema = new mongoose.Schema(
+const MaintenanceSchema = new mongoose.Schema(
   {
-    propertyId: {
-      type: Schema.Types.ObjectId,
-      ref: "Property",
-      required: [true, "Property ID is required"],
-    },
-    residentId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Resident ID is required"],
-    },
-    contractorId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-    description: {
-      type: String,
-      required: [true, "Description is required"],
-      trim: true,
-    },
+    // Who submitted
+    residentId:  { type: String, required: true, index: true },
+
+    // Which property + landlord (from assignment)
+    propertyId:  { type: mongoose.Schema.Types.ObjectId, ref: "Property", required: true },
+    landlordId:  { type: String, required: true },
+
+    // Request details
+    subject:     { type: String, required: true, trim: true, maxlength: 100 },
+    description: { type: String, required: true, trim: true, maxlength: 1000 },
+
     priority: {
-      type: String,
-      enum: ["Low", "Medium", "High", "Emergency"],
-      default: "Low",
+      type:    String,
+      enum:    ["Standard", "Urgent", "Emergency"],
+      default: "Standard",
     },
-    mediaUrls: [
-      {
-        type: String,
-      },
-    ],
+
     status: {
-      type: String,
-      enum: ["Submitted", "Assigned", "In Progress", "Completed", "Closed"],
+      type:    String,
+      enum:    ["Submitted", "In Progress", "Completed"],
       default: "Submitted",
     },
+
+    // Up to 3 photos — stored in Cloudinary
+    photos: [
+      {
+        url:      { type: String, default: "" },
+        publicId: { type: String, default: "" },
+      },
+    ],
   },
-  {
-    timestamps: { createdAt: "createdAt", updatedAt: "updatedAt" },
-  }
+  { timestamps: true }
 );
 
-export default mongoose.model("Maintenance", maintenanceSchema);
+// Indexes for common queries
+MaintenanceSchema.index({ residentId: 1, createdAt: -1 });
+MaintenanceSchema.index({ landlordId: 1, createdAt: -1 });
+MaintenanceSchema.index({ propertyId: 1, createdAt: -1 });
+
+module.exports = mongoose.model("Maintenance", MaintenanceSchema);

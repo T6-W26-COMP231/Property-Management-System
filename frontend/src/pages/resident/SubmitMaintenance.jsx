@@ -1,44 +1,68 @@
-import { useState, useRef } from "react";
-import Alert from "../../components/Alert";
+import { useState, useEffect } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { createRequest, getMyAssignment } from "../../services/api";
+import Alert       from "../../components/Alert";
+import Toast       from "../../components/Toast";
+import PhotoUpload from "../../components/PhotoUpload";
 
 const PRIORITIES = ["Standard", "Urgent", "Emergency"];
 
 const PRIORITY_INFO = {
-  Standard:  { badge: "info",    icon: "bi-flag",                        desc: "Non-urgent, routine maintenance"          },
-  Urgent:    { badge: "warning", icon: "bi-flag-fill",                   desc: "Needs attention soon, affects daily life" },
-  Emergency: { badge: "danger",  icon: "bi-exclamation-triangle-fill",   desc: "Immediate risk to safety or property"     },
+  Standard:  { badge: "info",    icon: "bi-flag",                       desc: "Non-urgent, routine maintenance"          },
+  Urgent:    { badge: "warning", icon: "bi-flag-fill",                  desc: "Needs attention soon, affects daily life" },
+  Emergency: { badge: "danger",  icon: "bi-exclamation-triangle-fill",  desc: "Immediate risk to safety or property"     },
 };
+  
 
 const MAX_PHOTOS = 3;
 
+const toBase64 = (file) =>
+  new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload  = () => res(reader.result);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+
 export default function SubmitMaintenance() {
-  const [subject,     setSubject]     = useState("");
-  const [description, setDescription] = useState("");
-  const [priority,    setPriority]    = useState("Standard");
-  const [photos,      setPhotos]      = useState([]);   // [{ file, preview }]
-  const [alert,       setAlert]       = useState({ type: "", message: "" });
-  const fileRef = useRef(null);
+  const { getAccessTokenSilently } = useAuth0();
 
-  const handlePhotoChange = (e) => {
-    const files = Array.from(e.target.files);
-    const remaining = MAX_PHOTOS - photos.length;
-    const toAdd     = files.slice(0, remaining);
+  const [subject,      setSubject]      = useState("");
+  const [description,  setDescription]  = useState("");
+  const [priority,     setPriority]     = useState("Standard");
+  const [photos,       setPhotos]       = useState([]);
+  const [submitting,   setSubmitting]   = useState(false);
+  const [alert,        setAlert]        = useState({ type: "", message: "" });
+  const [toast,        setToast]        = useState({ show: false, type: "success", message: "" });
+  const [hasAssignment,setHasAssignment]= useState(null);
 
-    const newPhotos = toAdd.map((file) => ({
-      file,
-      preview: URL.createObjectURL(file),
-      name:    file.name,
-    }));
+  // ── Check assignment on mount ─────────────────────────────────────────────
+  useEffect(() => {
+    const check = async () => {
+      try {
+        const token = await getAccessTokenSilently();
+        await getMyAssignment(token);
+        setHasAssignment(true);
+      } catch {
+        setHasAssignment(false);
+      }
+    };
+    check();
+  }, []);
 
-    setPhotos((prev) => [...prev, ...newPhotos]);
-    e.target.value = ""; // reset input so same file can be re-selected
+  // ── Clear form ────────────────────────────────────────────────────────────
+  const clearForm = () => {
+    setSubject("");
+    setDescription("");
+    setPriority("Standard");
+    setPhotos([]);
+    setAlert({ type: "", message: "" });
   };
 
-  const removePhoto = (index) => {
-    setPhotos((prev) => prev.filter((_, i) => i !== index));
-  };
+  // ── Submit ────────────────────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    setAlert({ type: "", message: "" });
 
-  const handleSubmit = () => {
     if (!subject.trim()) {
       setAlert({ type: "warning", message: "Please enter a subject." });
       return;
@@ -47,15 +71,63 @@ export default function SubmitMaintenance() {
       setAlert({ type: "warning", message: "Please enter a description." });
       return;
     }
-    // Fake submit — just show success
-    setAlert({ type: "success", message: "Maintenance request submitted successfully!" });
-    setSubject("");
-    setDescription("");
-    setPriority("Standard");
-    setPhotos([]);
+
+    setSubmitting(true);
+    try {
+      const token = await getAccessTokenSilently();
+
+      // Convert photos to base64 for upload
+      const photoBase64s = await Promise.all(photos.map((p) => toBase64(p.file)));
+
+      await createRequest(token, {
+        subject:     subject.trim(),
+        description: description.trim(),
+        priority,
+        photos:      photoBase64s,
+      });
+
+      clearForm();
+      setToast({ show: true, type: "success", message: "Maintenance request submitted successfully!" });
+    } catch (err) {
+      const msg = err.message?.includes("No active property")
+        ? "You are not assigned to a property. Please contact your landlord."
+        : "Failed to submit request. Please try again.";
+      setAlert({ type: "danger", message: msg });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const selectedPriority = PRIORITY_INFO[priority];
+
+  // ── Loading ────────────────────────────────────────────────────────────────
+  if (hasAssignment === null) {
+    return (
+      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 300 }}>
+        <div className="spinner-border text-success" />
+      </div>
+    );
+  }
+
+  // ── No assignment ──────────────────────────────────────────────────────────
+  if (!hasAssignment) {
+    return (
+      <div className="p-4" style={{ maxWidth: 720 }}>
+        <div className="mb-4">
+          <h4 className="fw-bold mb-1">Submit Maintenance Request</h4>
+          <p className="text-muted small mb-0">Describe the issue and we'll get it resolved as soon as possible.</p>
+        </div>
+        <div className="text-center py-5">
+          <i className="bi bi-house-x text-muted fs-1 d-block mb-3" />
+          <h5 className="fw-bold text-muted">No Property Assigned</h5>
+          <p className="text-muted small">
+            You have not been assigned to a property yet.<br />
+            Please contact your landlord to get assigned.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4" style={{ maxWidth: 720 }}>
@@ -63,14 +135,13 @@ export default function SubmitMaintenance() {
       {/* Header */}
       <div className="mb-4">
         <h4 className="fw-bold mb-1">Submit Maintenance Request</h4>
-        <p className="text-muted small">Describe the issue and we'll get it resolved as soon as possible.</p>
+        <p className="text-muted small mb-0">Describe the issue and we'll get it resolved as soon as possible.</p>
       </div>
 
       <Alert
         type={alert.type}
         message={alert.message}
         dismissible
-        autoDismiss
         onDismiss={() => setAlert({ type: "", message: "" })}
       />
 
@@ -89,6 +160,7 @@ export default function SubmitMaintenance() {
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
                 maxLength={100}
+                disabled={submitting}
               />
               <div className="text-muted small mt-1">{subject.length}/100</div>
             </div>
@@ -101,10 +173,11 @@ export default function SubmitMaintenance() {
               <textarea
                 className="form-control"
                 rows={5}
-                placeholder="Please describe the issue in detail. Include when it started, how severe it is, and any relevant information..."
+                placeholder="Describe the issue in detail. Include when it started, how severe it is, and any relevant information..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 maxLength={1000}
+                disabled={submitting}
               />
               <div className="text-muted small mt-1">{description.length}/1000</div>
             </div>
@@ -116,13 +189,12 @@ export default function SubmitMaintenance() {
                 className="form-select mb-2"
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
+                disabled={submitting}
               >
                 {PRIORITIES.map((p) => (
                   <option key={p} value={p}>{p}</option>
                 ))}
               </select>
-
-              {/* Priority info banner */}
               <div className={`alert alert-${selectedPriority.badge} d-flex align-items-center gap-2 py-2 mb-0`}>
                 <i className={`bi ${selectedPriority.icon}`} />
                 <span className="small">{selectedPriority.desc}</span>
@@ -133,59 +205,14 @@ export default function SubmitMaintenance() {
             <div className="col-12">
               <label className="form-label fw-semibold">
                 Photos
-                <span className="text-muted fw-normal ms-2 small">(max {MAX_PHOTOS})</span>
+                <span className="text-muted fw-normal ms-2 small">(max 3)</span>
               </label>
-
-              {/* Upload button */}
-              {photos.length < MAX_PHOTOS && (
-                <div
-                  className="border border-2 border-dashed rounded-3 text-center py-4 mb-3"
-                  style={{ cursor: "pointer", borderStyle: "dashed !important" }}
-                  onClick={() => fileRef.current.click()}
-                >
-                  <i className="bi bi-cloud-upload text-primary fs-2 d-block mb-2" />
-                  <div className="fw-semibold text-primary">Click to upload photos</div>
-                  <div className="text-muted small">
-                    {photos.length}/{MAX_PHOTOS} photos added · JPG, PNG, WEBP
-                  </div>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    className="d-none"
-                    onChange={handlePhotoChange}
-                  />
-                </div>
-              )}
-
-              {/* Photo previews */}
-              {photos.length > 0 && (
-                <div className="row g-3">
-                  {photos.map((photo, i) => (
-                    <div key={i} className="col-4">
-                      <div className="position-relative">
-                        <img
-                          src={photo.preview}
-                          alt={photo.name}
-                          className="rounded-3 w-100"
-                          style={{ height: 120, objectFit: "cover" }}
-                        />
-                        <button
-                          className="btn btn-danger btn-sm position-absolute top-0 end-0 m-1 rounded-circle p-0"
-                          style={{ width: 24, height: 24, fontSize: 12 }}
-                          onClick={() => removePhoto(i)}
-                        >
-                          <i className="bi bi-x" />
-                        </button>
-                        <div className="text-muted text-truncate mt-1" style={{ fontSize: 11 }}>
-                          {photo.name}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <PhotoUpload
+                photos={photos}
+                onChange={setPhotos}
+                maxPhotos={3}
+                disabled={submitting}
+              />
             </div>
 
           </div>
@@ -195,21 +222,29 @@ export default function SubmitMaintenance() {
         <div className="card-footer bg-transparent border-top p-4 d-flex justify-content-end gap-2">
           <button
             className="btn btn-outline-secondary"
-            onClick={() => {
-              setSubject("");
-              setDescription("");
-              setPriority("Standard");
-              setPhotos([]);
-              setAlert({ type: "", message: "" });
-            }}
+            onClick={clearForm}
+            disabled={submitting}
           >
             <i className="bi bi-x-lg me-1" />Clear
           </button>
-          <button className="btn btn-success" onClick={handleSubmit}>
-            <i className="bi bi-send me-1" />Submit Request
+          <button
+            className="btn btn-success"
+            onClick={handleSubmit}
+            disabled={submitting}
+          >
+            {submitting
+              ? <><span className="spinner-border spinner-border-sm me-2" />Submitting...</>
+              : <><i className="bi bi-send me-1" />Submit Request</>}
           </button>
         </div>
       </div>
+
+      <Toast
+        show={toast.show}
+        type={toast.type}
+        message={toast.message}
+        onClose={() => setToast((t) => ({ ...t, show: false }))}
+      />
 
     </div>
   );
