@@ -8,3 +8,6 @@ export const deleteRequest       = (token, id)           => http(`/api/maintenan
 // Landlord
 export const getPropertyRequests = (token, propertyId)   => http(`/api/maintenance/property/${propertyId}`, token);
 export const updateStatus        = (token, id, status)   => http(`/api/maintenance/${id}/status`,       token, { method: "PATCH", body: { status } });
+
+
+
