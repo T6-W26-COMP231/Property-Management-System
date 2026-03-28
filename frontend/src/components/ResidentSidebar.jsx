@@ -1,3 +1,5 @@
+import NotificationPanel from "./NotificationPanel";
+
 const SIDEBAR_ITEMS = [
   { key: "property",  icon: "bi-house-door",      label: "Property Detail"          },
   { key: "submit",    icon: "bi-tools",            label: "Submit Maintenance"       },
@@ -34,6 +36,9 @@ export default function ResidentSidebar({ active, onSelect }) {
             {item.label}
           </button>
         ))}
+
+        {/* Notifications */}
+        <NotificationPanel />
       </nav>
 
       {/* Footer */}

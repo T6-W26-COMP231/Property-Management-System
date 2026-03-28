@@ -112,6 +112,17 @@ const updateStatus = async (req, res) => {
 
     request.status = status;
     await request.save();
+
+    // Send real-time notification to resident
+    const { sendNotification } = require("./notificationController");
+    await sendNotification({
+      userId:  request.residentId,
+      type:    "maintenance_status",
+      title:   "Maintenance Request Updated",
+      message: `Your request "${request.subject}" status changed to "${status}".`,
+      data:    { requestId: request._id, status, subject: request.subject },
+    });
+
     res.json(request);
   } catch (err) {
     console.error("updateStatus error:", err);
