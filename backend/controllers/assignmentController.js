@@ -211,4 +211,51 @@ const updateRentStatus = async (req, res) => {
   }
 };
 
-module.exports = { getAssignments, createAssignment, updateAssignment, deleteAssignment, updateRentStatus };
+// ── GET /api/assignments/my — resident gets their own assignment ──────────────
+const getMyAssignment = async (req, res) => {
+  try {
+    const residentId = req.auth.payload.sub;
+
+    const assignment = await Assignment.findOne({ residentId, status: "active" });
+    if (!assignment) return res.status(404).json({ error: "No active assignment found" });
+
+    // Get property info
+    const Property = require("../models/Property");
+    const property = await Property.findById(assignment.propertyId);
+    if (!property) return res.status(404).json({ error: "Property not found" });
+
+    // Get landlord info + profile
+    const landlord        = await User.findOne({ auth0Id: assignment.landlordId });
+    const landlordProfile = await Profile.findOne({ auth0Id: assignment.landlordId });
+
+    res.json({
+      ...assignment.toObject(),
+      property: {
+        _id:         property._id,
+        name:        property.name,
+        location:    property.location,
+        description: property.description,
+        image:       property.image,
+      },
+      landlord: {
+        auth0Id:       assignment.landlordId,
+        name:          landlord?.name                || "",
+        email:         landlord?.email               || "",
+        contactNumber: landlordProfile?.contactNumber|| "",
+        photo:         landlordProfile?.photo?.url   || landlord?.picture || "",
+      },
+    });
+  } catch (err) {
+    console.error("getMyAssignment error:", err);
+    res.status(500).json({ error: "Failed to fetch assignment" });
+  }
+};
+
+module.exports = {
+  getAssignments,
+  getMyAssignment,
+  createAssignment,
+  updateAssignment,
+  deleteAssignment,
+  updateRentStatus,
+};
