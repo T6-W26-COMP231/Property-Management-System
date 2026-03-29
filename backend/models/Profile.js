@@ -25,6 +25,9 @@ const ProfileSchema = new mongoose.Schema(
       url:      { type: String, default: "" },
       publicId: { type: String, default: "" },
     },
+
+    // Contractor only — job type
+    jobType: { type: String, default: "", trim: true },
   },
   { timestamps: true }
 );

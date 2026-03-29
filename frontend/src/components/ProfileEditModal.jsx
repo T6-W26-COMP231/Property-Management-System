@@ -17,6 +17,14 @@ export const JOB_TYPES = [
   "General Handyman",
 ];
 
+const toBase64 = (file) =>
+  new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload  = () => res(reader.result);
+    reader.onerror = rej;
+    reader.readAsDataURL(file);
+  });
+
 export default function ProfileEditModal({
   show = false,
   profile = null,
@@ -26,15 +34,9 @@ export default function ProfileEditModal({
   onClose = () => {},
 }) {
   const [form, setForm] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    contactNumber: "",
-    address: "",
-    city: "",
-    state: "",
-    jobType: "",
-    photoPreview: "",
+    firstName: "", lastName: "", email: "",
+    contactNumber: "", address: "", city: "", state: "",
+    jobType: "", photoBase64: "", photoPreview: "",
   });
 
   const fileRef = useRef(null);
@@ -46,11 +48,12 @@ export default function ProfileEditModal({
         lastName: profile.lastName || "",
         email: profile.email || "",
         contactNumber: profile.contactNumber || "",
-        address: profile.address || "",
-        city: profile.city || "",
-        state: profile.state || "",
-        jobType: profile.jobType || "",
-        photoPreview: profile.photo?.url || "",
+        address:       profile.address       || "",
+        city:          profile.city          || "",
+        state:         profile.state         || "",
+        jobType:       profile.jobType       || "",
+        photoBase64:   "",
+        photoPreview:  profile.photo?.url    || "",
       });
     }
   }, [show, profile]);
@@ -88,18 +91,20 @@ export default function ProfileEditModal({
             <button className="btn-close" onClick={onClose} disabled={saving} />
           </div>
 
-          <div className="modal-body">
-
+          <div className="modal-body p-4">
             {error && (
-              <div className="alert alert-danger">{error}</div>
+              <div className="alert alert-danger d-flex align-items-center gap-2 py-2 mb-3">
+                <i className="bi bi-x-circle-fill flex-shrink-0" />
+                <span className="small">{error}</span>
+              </div>
             )}
 
             {/* Photo */}
-            <div className="text-center mb-3">
+            <div className="text-center mb-4">
               <img
                 src={form.photoPreview || DEFAULT_AVATAR}
                 alt="preview"
-                className="rounded-circle mb-2"
+                className="rounded-circle border shadow-sm mb-3"
                 style={{ width: 100, height: 100, objectFit: "cover" }}
               />
               <br />
@@ -157,13 +162,57 @@ export default function ProfileEditModal({
 
               {isContractor && (
                 <div className="col-12">
+            <div className="row g-3">
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">First Name</label>
+                <input className="form-control" name="firstName" placeholder="John"
+                  value={form.firstName} onChange={handleChange} disabled={saving} />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Last Name</label>
+                <input className="form-control" name="lastName" placeholder="Smith"
+                  value={form.lastName} onChange={handleChange} disabled={saving} />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Email</label>
+                <input className="form-control" name="email" type="email" placeholder="john@example.com"
+                  value={form.email} onChange={handleChange} disabled={saving} />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">Contact Number</label>
+                <input className="form-control" name="contactNumber" placeholder="+1 (416) 555-0123"
+                  value={form.contactNumber} onChange={handleChange} disabled={saving} />
+              </div>
+              <div className="col-12">
+                <label className="form-label fw-semibold">Address</label>
+                <input className="form-control" name="address" placeholder="123 Main Street"
+                  value={form.address} onChange={handleChange} disabled={saving} />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">City</label>
+                <input className="form-control" name="city" placeholder="Toronto"
+                  value={form.city} onChange={handleChange} disabled={saving} />
+              </div>
+              <div className="col-md-6">
+                <label className="form-label fw-semibold">State / Province</label>
+                <input className="form-control" name="state" placeholder="Ontario"
+                  value={form.state} onChange={handleChange} disabled={saving} />
+              </div>
+
+              {/* Job type — contractors only */}
+              {isContractor && (
+                <div className="col-12">
+                  <label className="form-label fw-semibold">
+                    <i className="bi bi-tools me-1 text-warning" />Job Type
+                  </label>
                   <select
                     className="form-select"
                     name="jobType"
                     value={form.jobType}
                     onChange={handleChange}
+                    disabled={saving}
                   >
-                    <option value="">Select job type</option>
+                    <option value="">Select job type...</option>
                     {JOB_TYPES.map((j) => (
                       <option key={j} value={j}>{j}</option>
                     ))}
@@ -180,6 +229,13 @@ export default function ProfileEditModal({
             </button>
             <button className="btn btn-primary" onClick={handleSave}>
               {saving ? "Saving..." : "Save"}
+            <button className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+              {saving
+                ? <><span className="spinner-border spinner-border-sm me-2" />Saving...</>
+                : <><i className="bi bi-check-lg me-1" />Save Changes</>}
             </button>
           </div>
 
