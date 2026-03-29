@@ -1,72 +1,56 @@
 import { useState, useRef, useEffect } from "react";
-import Alert from "./Alert";
 
 const DEFAULT_AVATAR = "https://placehold.co/100x100/cccccc/ffffff?text=No+Photo";
 
-const toBase64 = (file) =>
-  new Promise((res, rej) => {
-    const reader = new FileReader();
-    reader.onload  = () => res(reader.result);
-    reader.onerror = rej;
-    reader.readAsDataURL(file);
-  });
-
-// ── Usage ─────────────────────────────────────────────────────────────────────
-//
-// <ProfileEditModal
-//   show={showModal}
-//   profile={profile}           // current profile object from API
-//   saving={saving}             // bool — show spinner on save button
-//   error={error}               // string — error message
-//   onSave={(formData) => {}}   // called with form data when Save clicked
-//   onClose={() => {}}          // called when modal closed
-//   onRemovePhoto={() => {}}    // called when Remove Photo clicked
-// />
-//
-// formData shape returned in onSave:
-// {
-//   firstName, lastName, email,
-//   contactNumber, address, city, state,
-//   photoBase64 (only if new photo selected)
-// }
-// ─────────────────────────────────────────────────────────────────────────────
+export const JOB_TYPES = [
+  "Plumber",
+  "House Cleaner",
+  "Electrician",
+  "HVAC Technician",
+  "Carpenter",
+  "Painter",
+  "Roofer",
+  "Landscaper",
+  "Pest Control",
+  "Appliance Repair",
+  "Locksmith",
+  "General Handyman",
+];
 
 export default function ProfileEditModal({
-  show          = false,
-  profile       = null,
-  saving        = false,
-  error         = "",
-  onSave        = () => {},
-  onClose       = () => {},
-  onRemovePhoto = () => {},
+  show = false,
+  profile = null,
+  saving = false,
+  error = "",
+  onSave = () => {},
+  onClose = () => {},
 }) {
   const [form, setForm] = useState({
-    firstName:     "",
-    lastName:      "",
-    email:         "",
+    firstName: "",
+    lastName: "",
+    email: "",
     contactNumber: "",
-    address:       "",
-    city:          "",
-    state:         "",
-    photoBase64:   "",
-    photoPreview:  "",
+    address: "",
+    city: "",
+    state: "",
+    jobType: "",
+    photoPreview: "",
   });
 
   const fileRef = useRef(null);
 
-  // Populate form when modal opens or profile changes
   useEffect(() => {
     if (show && profile) {
       setForm({
-        firstName:     profile.firstName     || "",
-        lastName:      profile.lastName      || "",
-        email:         profile.email         || "",
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+        email: profile.email || "",
         contactNumber: profile.contactNumber || "",
-        address:       profile.address       || "",
-        city:          profile.city          || "",
-        state:         profile.state         || "",
-        photoBase64:   "",
-        photoPreview:  profile.photo?.url    || "",
+        address: profile.address || "",
+        city: profile.city || "",
+        state: profile.state || "",
+        jobType: profile.jobType || "",
+        photoPreview: profile.photo?.url || "",
       });
     }
   }, [show, profile]);
@@ -74,66 +58,57 @@ export default function ProfileEditModal({
   const handleChange = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  const handlePhotoChange = async (e) => {
+  const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const base64 = await toBase64(file);
-    setForm((f) => ({ ...f, photoBase64: base64, photoPreview: base64 }));
+
+    const preview = URL.createObjectURL(file);
+    setForm((f) => ({ ...f, photoPreview: preview }));
   };
 
   const handleSave = () => {
-    const { photoPreview, ...rest } = form;
-    onSave(rest);
+    if (!form.firstName || !form.email) {
+      return alert("First name and email are required");
+    }
+
+    onSave(form);
   };
+
+  const isContractor = profile?.role === "contractor";
 
   if (!show) return null;
 
   return (
     <div className="modal show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
-      <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div className="modal-content border-0 shadow">
+      <div className="modal-dialog modal-lg modal-dialog-centered">
+        <div className="modal-content">
 
-          {/* Header */}
           <div className="modal-header">
-            <h5 className="modal-title fw-bold">
-              <i className="bi bi-pencil me-2 text-primary" />Edit Profile
-            </h5>
+            <h5 className="modal-title">Edit Profile</h5>
             <button className="btn-close" onClick={onClose} disabled={saving} />
           </div>
 
-          {/* Body */}
-          <div className="modal-body p-4">
+          <div className="modal-body">
 
             {error && (
-              <Alert type="danger" message={error} dismissible />
+              <div className="alert alert-danger">{error}</div>
             )}
 
-            {/* Photo section */}
-            <div className="text-center mb-4">
+            {/* Photo */}
+            <div className="text-center mb-3">
               <img
                 src={form.photoPreview || DEFAULT_AVATAR}
-                alt="profile preview"
-                className="rounded-circle border shadow-sm mb-3"
+                alt="preview"
+                className="rounded-circle mb-2"
                 style={{ width: 100, height: 100, objectFit: "cover" }}
               />
-              <div className="d-flex justify-content-center gap-2">
-                <button
-                  className="btn btn-outline-primary btn-sm"
-                  onClick={() => fileRef.current.click()}
-                  disabled={saving}
-                >
-                  <i className="bi bi-camera me-1" />Change Photo
-                </button>
-                {profile?.photo?.url && (
-                  <button
-                    className="btn btn-outline-danger btn-sm"
-                    onClick={onRemovePhoto}
-                    disabled={saving}
-                  >
-                    <i className="bi bi-trash me-1" />Remove
-                  </button>
-                )}
-              </div>
+              <br />
+              <button
+                className="btn btn-outline-primary btn-sm"
+                onClick={() => fileRef.current.click()}
+              >
+                Change Photo
+              </button>
               <input
                 ref={fileRef}
                 type="file"
@@ -143,106 +118,68 @@ export default function ProfileEditModal({
               />
             </div>
 
-            {/* Form fields */}
-            <div className="row g-3">
+            <div className="row g-2">
               <div className="col-md-6">
-                <label className="form-label fw-semibold">First Name</label>
-                <input
-                  className="form-control"
-                  name="firstName"
-                  placeholder="John"
-                  value={form.firstName}
-                  onChange={handleChange}
-                  disabled={saving}
-                />
+                <input className="form-control" name="firstName"
+                  placeholder="First Name"
+                  value={form.firstName} onChange={handleChange} />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-semibold">Last Name</label>
-                <input
-                  className="form-control"
-                  name="lastName"
-                  placeholder="Smith"
-                  value={form.lastName}
-                  onChange={handleChange}
-                  disabled={saving}
-                />
+                <input className="form-control" name="lastName"
+                  placeholder="Last Name"
+                  value={form.lastName} onChange={handleChange} />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-semibold">Email</label>
-                <input
-                  className="form-control"
-                  name="email"
-                  type="email"
-                  placeholder="john@example.com"
-                  value={form.email}
-                  onChange={handleChange}
-                  disabled={saving}
-                />
+                <input className="form-control" name="email"
+                  placeholder="Email"
+                  value={form.email} onChange={handleChange} />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-semibold">Contact Number</label>
-                <input
-                  className="form-control"
-                  name="contactNumber"
-                  placeholder="+1 (416) 555-0123"
-                  value={form.contactNumber}
-                  onChange={handleChange}
-                  disabled={saving}
-                />
+                <input className="form-control" name="contactNumber"
+                  placeholder="Phone"
+                  value={form.contactNumber} onChange={handleChange} />
               </div>
               <div className="col-12">
-                <label className="form-label fw-semibold">Address</label>
-                <input
-                  className="form-control"
-                  name="address"
-                  placeholder="123 Main Street"
-                  value={form.address}
-                  onChange={handleChange}
-                  disabled={saving}
-                />
+                <input className="form-control" name="address"
+                  placeholder="Address"
+                  value={form.address} onChange={handleChange} />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-semibold">City</label>
-                <input
-                  className="form-control"
-                  name="city"
-                  placeholder="Toronto"
-                  value={form.city}
-                  onChange={handleChange}
-                  disabled={saving}
-                />
+                <input className="form-control" name="city"
+                  placeholder="City"
+                  value={form.city} onChange={handleChange} />
               </div>
               <div className="col-md-6">
-                <label className="form-label fw-semibold">State / Province</label>
-                <input
-                  className="form-control"
-                  name="state"
-                  placeholder="Ontario"
-                  value={form.state}
-                  onChange={handleChange}
-                  disabled={saving}
-                />
+                <input className="form-control" name="state"
+                  placeholder="State"
+                  value={form.state} onChange={handleChange} />
               </div>
+
+              {isContractor && (
+                <div className="col-12">
+                  <select
+                    className="form-select"
+                    name="jobType"
+                    value={form.jobType}
+                    onChange={handleChange}
+                  >
+                    <option value="">Select job type</option>
+                    {JOB_TYPES.map((j) => (
+                      <option key={j} value={j}>{j}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
+
           </div>
 
-          {/* Footer */}
           <div className="modal-footer">
-            <button
-              className="btn btn-outline-secondary"
-              onClick={onClose}
-              disabled={saving}
-            >
+            <button className="btn btn-secondary" onClick={onClose}>
               Cancel
             </button>
-            <button
-              className="btn btn-primary"
-              onClick={handleSave}
-              disabled={saving}
-            >
-              {saving
-                ? <><span className="spinner-border spinner-border-sm me-2" />Saving...</>
-                : <><i className="bi bi-check-lg me-1" />Save Changes</>}
+            <button className="btn btn-primary" onClick={handleSave}>
+              {saving ? "Saving..." : "Save"}
             </button>
           </div>
 

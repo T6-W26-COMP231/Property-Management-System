@@ -3,6 +3,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { syncUser, updateProfile } from "../services/api";
 import { useUser } from "../context/UserContext";
 import Alert from "../components/Alert";
+import { JOB_TYPES } from "../components/ProfileEditModal";
 
 const ROLES = [
   { id: "resident",   label: "Resident",   icon: "bi-house-heart", desc: "I live in a property"      },
@@ -36,6 +37,7 @@ export default function OnboardingPage() {
   const [address,       setAddress]       = useState("");
   const [city,          setCity]          = useState("");
   const [state,         setState]         = useState("");
+  const [jobType,       setJobType]       = useState("");
   const [photoBase64,   setPhotoBase64]   = useState("");
   const [photoPreview,  setPhotoPreview]  = useState("");
 
@@ -81,6 +83,7 @@ export default function OnboardingPage() {
         address,
         city,
         state,
+        jobType,
         ...(photoBase64 && { photoBase64 }),
       });
 
@@ -263,6 +266,25 @@ export default function OnboardingPage() {
                   onChange={(e) => setState(e.target.value)}
                 />
               </div>
+
+              {/* Job type — contractors only */}
+              {selectedRole === "contractor" && (
+                <div className="col-12">
+                  <label className="form-label fw-semibold small">
+                    <i className="bi bi-tools me-1 text-warning" />Job Type
+                  </label>
+                  <select
+                    className="form-select form-select-sm"
+                    value={jobType}
+                    onChange={(e) => setJobType(e.target.value)}
+                  >
+                    <option value="">Select your job type...</option>
+                    {JOB_TYPES.map((j) => (
+                      <option key={j} value={j}>{j}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {error && <Alert type="danger" message={error} />}
