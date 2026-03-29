@@ -8,12 +8,14 @@ import MessagesLayoutPage from '../pages/MessageLayout';
 import ProfilePage       from "../pages/ProfilePage";
 import LandlordDashboard from "../pages/Landlord/LandlordDashboard";
 import ResidentDashboard from "../pages/resident/ResidentDashboard";
+import ContractorDashboard from "../pages/contractor/ContractorDashboard";
 const MainRouter = () => {
 
   const { dbUser } = useUser();
 
   const isLandlord = dbUser?.role === "landlord";
   const isResident = dbUser?.role === "resident";
+  const isContractor = dbUser?.role === "contractor";
 
   return (
     
@@ -30,6 +32,10 @@ const MainRouter = () => {
        <Route
         path="/resident/*"
         element={isResident ? <ResidentDashboard /> : <Navigate to="/" replace />}
+              />
+        <Route
+        path="/contractor/*"
+        element={isContractor ? <ContractorDashboard /> : <Navigate to="/" replace />}
       />
         </Routes>
       </div>
