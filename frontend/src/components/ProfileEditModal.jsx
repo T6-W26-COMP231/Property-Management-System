@@ -26,13 +26,12 @@ const toBase64 = (file) =>
   });
 
 export default function ProfileEditModal({
-  show          = false,
-  profile       = null,
-  saving        = false,
-  error         = "",
-  onSave        = () => {},
-  onClose       = () => {},
-  onRemovePhoto = () => {},
+  show = false,
+  profile = null,
+  saving = false,
+  error = "",
+  onSave = () => {},
+  onClose = () => {},
 }) {
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "",
@@ -45,9 +44,9 @@ export default function ProfileEditModal({
   useEffect(() => {
     if (show && profile) {
       setForm({
-        firstName:     profile.firstName     || "",
-        lastName:      profile.lastName      || "",
-        email:         profile.email         || "",
+        firstName: profile.firstName || "",
+        lastName: profile.lastName || "",
+        email: profile.email || "",
         contactNumber: profile.contactNumber || "",
         address:       profile.address       || "",
         city:          profile.city          || "",
@@ -62,16 +61,20 @@ export default function ProfileEditModal({
   const handleChange = (e) =>
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
 
-  const handlePhotoChange = async (e) => {
+  const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const base64 = await toBase64(file);
-    setForm((f) => ({ ...f, photoBase64: base64, photoPreview: base64 }));
+
+    const preview = URL.createObjectURL(file);
+    setForm((f) => ({ ...f, photoPreview: preview }));
   };
 
   const handleSave = () => {
-    const { photoPreview, ...rest } = form;
-    onSave(rest);
+    if (!form.firstName || !form.email) {
+      return alert("First name and email are required");
+    }
+
+    onSave(form);
   };
 
   const isContractor = profile?.role === "contractor";
@@ -80,13 +83,11 @@ export default function ProfileEditModal({
 
   return (
     <div className="modal show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
-      <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div className="modal-content border-0 shadow">
+      <div className="modal-dialog modal-lg modal-dialog-centered">
+        <div className="modal-content">
 
           <div className="modal-header">
-            <h5 className="modal-title fw-bold">
-              <i className="bi bi-pencil me-2 text-primary" />Edit Profile
-            </h5>
+            <h5 className="modal-title">Edit Profile</h5>
             <button className="btn-close" onClick={onClose} disabled={saving} />
           </div>
 
@@ -106,24 +107,13 @@ export default function ProfileEditModal({
                 className="rounded-circle border shadow-sm mb-3"
                 style={{ width: 100, height: 100, objectFit: "cover" }}
               />
-              <div className="d-flex justify-content-center gap-2">
-                <button
-                  className="btn btn-outline-primary btn-sm"
-                  onClick={() => fileRef.current.click()}
-                  disabled={saving}
-                >
-                  <i className="bi bi-camera me-1" />Change Photo
-                </button>
-                {profile?.photo?.url && (
-                  <button
-                    className="btn btn-outline-danger btn-sm"
-                    onClick={onRemovePhoto}
-                    disabled={saving}
-                  >
-                    <i className="bi bi-trash me-1" />Remove
-                  </button>
-                )}
-              </div>
+              <br />
+              <button
+                className="btn btn-outline-primary btn-sm"
+                onClick={() => fileRef.current.click()}
+              >
+                Change Photo
+              </button>
               <input
                 ref={fileRef}
                 type="file"
@@ -133,6 +123,45 @@ export default function ProfileEditModal({
               />
             </div>
 
+            <div className="row g-2">
+              <div className="col-md-6">
+                <input className="form-control" name="firstName"
+                  placeholder="First Name"
+                  value={form.firstName} onChange={handleChange} />
+              </div>
+              <div className="col-md-6">
+                <input className="form-control" name="lastName"
+                  placeholder="Last Name"
+                  value={form.lastName} onChange={handleChange} />
+              </div>
+              <div className="col-md-6">
+                <input className="form-control" name="email"
+                  placeholder="Email"
+                  value={form.email} onChange={handleChange} />
+              </div>
+              <div className="col-md-6">
+                <input className="form-control" name="contactNumber"
+                  placeholder="Phone"
+                  value={form.contactNumber} onChange={handleChange} />
+              </div>
+              <div className="col-12">
+                <input className="form-control" name="address"
+                  placeholder="Address"
+                  value={form.address} onChange={handleChange} />
+              </div>
+              <div className="col-md-6">
+                <input className="form-control" name="city"
+                  placeholder="City"
+                  value={form.city} onChange={handleChange} />
+              </div>
+              <div className="col-md-6">
+                <input className="form-control" name="state"
+                  placeholder="State"
+                  value={form.state} onChange={handleChange} />
+              </div>
+
+              {isContractor && (
+                <div className="col-12">
             <div className="row g-3">
               <div className="col-md-6">
                 <label className="form-label fw-semibold">First Name</label>
@@ -191,9 +220,15 @@ export default function ProfileEditModal({
                 </div>
               )}
             </div>
+
           </div>
 
           <div className="modal-footer">
+            <button className="btn btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button className="btn btn-primary" onClick={handleSave}>
+              {saving ? "Saving..." : "Save"}
             <button className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>
               Cancel
             </button>
