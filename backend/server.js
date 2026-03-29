@@ -9,9 +9,8 @@ const userRoutes        = require("./routes/users");
 const propertyRoutes    = require("./routes/properties");
 const profileRoutes     = require("./routes/profile");
 const assignmentRoutes  = require("./routes/assignments");
-const maintenanceRoutes = require("./routes/maintenance");
-const notificationRoutes = require("./routes/notifications");
-const { initSocket } = require('./socket/socketHandler');
+// const maintenanceRoutes = require("./routes/maintenance");
+
 const app    = express();
 const server = http.createServer(app);
 
@@ -34,10 +33,7 @@ app.use("/api/users",    userRoutes);
 app.use("/api/properties", propertyRoutes);
 app.use("/api/profile",      profileRoutes);
 app.use("/api/assignments",   assignmentRoutes);
-app.use("/api/maintenance",  maintenanceRoutes);
-app.use("/api/notifications",  notificationRoutes);
-
-initSocket(server);
+// app.use("/api/maintenance",  maintenanceRoutes);
 // ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 
