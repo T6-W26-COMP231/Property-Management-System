@@ -105,6 +105,32 @@ export default function MaintenanceViewModal({ request = null, onClose = () => {
             <div className="card border-0 bg-light rounded-3 mb-3">
               <div className="card-header bg-transparent border-bottom fw-semibold small py-2 px-3">
                 <i className="bi bi-tools me-1" />Contractor
+                <span className={`badge bg-${ASSIGNMENT_STATUS_CONFIG[request.assignmentStatus]?.badge || "secondary"} ms-2`}>
+                  {request.assignmentStatus}
+                </span>
+              </div>
+              <div className="card-body p-3">
+                {request.contractor ? (
+                  <div className="d-flex align-items-center gap-3">
+                    <img
+                      src={request.contractor.photo || DEFAULT_CONTRACTOR}
+                      alt="contractor"
+                      className="rounded-circle border flex-shrink-0"
+                      width={52} height={52}
+                      style={{ objectFit: "cover" }}
+                    />
+                    <div>
+                      <div className="fw-semibold">
+                        {[request.contractor.firstName, request.contractor.lastName].filter(Boolean).join(" ") || "—"}
+                      </div>
+                      <div className="text-muted small">
+                        <i className="bi bi-envelope me-1" />{request.contractor.email || "—"}
+                      </div>
+                      {request.contractor.jobType && (
+                        <span className="badge bg-warning text-dark mt-1">
+                          <i className="bi bi-tools me-1" />{request.contractor.jobType}
+                        </span>
+                      )}
               </div>
               <div className="card-body p-3">
                 {request.contractorId ? (
@@ -125,6 +151,7 @@ export default function MaintenanceViewModal({ request = null, onClose = () => {
                     <i className="bi bi-person-dash fs-4" />
                     <div>
                       <div className="fw-semibold small">No contractor assigned</div>
+                      <div style={{ fontSize: 11 }}>Use Search Contractor to assign one</div>
                       <div style={{ fontSize: 11 }}>Contractor will be assigned soon</div>
                     </div>
                   </div>
@@ -162,6 +189,32 @@ export default function MaintenanceViewModal({ request = null, onClose = () => {
               <i className="bi bi-calendar me-1" />
               Submitted: {new Date(request.createdAt).toLocaleDateString([], { year: "numeric", month: "long", day: "numeric" })}
             </div>
+
+            {/* Remove contractor — only when contractor is assigned */}
+            {onUnassign && request.contractorId && (
+              <button
+                className="btn btn-outline-danger btn-sm"
+                onClick={() => {
+                  if (window.confirm("Remove contractor from this request? Status will return to Unassigned.")) {
+                    onUnassign(request);
+                    onClose();
+                  }
+                }}
+              >
+                <i className="bi bi-person-dash me-1" />Remove Contractor
+              </button>
+            )}
+
+            {/* Search contractor — only when Unassigned or Declined */}
+            {onSearchContractor && ["Unassigned", "Declined"].includes(request.assignmentStatus) && (
+              <button
+                className="btn btn-warning btn-sm"
+                onClick={() => { onClose(); onSearchContractor(request); }}
+              >
+                <i className="bi bi-search me-1" />Search Contractor
+              </button>
+            )}
+
             <button className="btn btn-outline-secondary" onClick={onClose}>Close</button>
           </div>
 

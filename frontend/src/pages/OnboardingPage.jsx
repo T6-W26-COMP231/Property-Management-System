@@ -4,6 +4,7 @@ import { syncUser, updateProfile } from "../services/api";
 import { useUser } from "../context/UserContext";
 import Alert from "../components/Alert";
 import { JOB_TYPES } from "../components/ProfileEditModal";
+import CANADIAN_CITIES from "../constants/canadianCities";
 
 const ROLES = [
   { id: "resident",   label: "Resident",   icon: "bi-house-heart", desc: "I live in a property"      },
@@ -250,12 +251,25 @@ export default function OnboardingPage() {
               </div>
               <div className="col-6">
                 <label className="form-label fw-semibold small">City</label>
-                <input
-                  className="form-control form-control-sm"
-                  placeholder="Toronto"
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                />
+                {selectedRole === "contractor" ? (
+                  <select
+                    className="form-select form-select-sm"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  >
+                    <option value="">Select city...</option>
+                    {CANADIAN_CITIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    className="form-control form-control-sm"
+                    placeholder="Toronto"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                  />
+                )}
               </div>
               <div className="col-6">
                 <label className="form-label fw-semibold small">State / Province</label>

@@ -3,6 +3,19 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { getNotifications, markRead, markAllRead } from "../services/api";
 import { getSocket } from "../services/socket";
 
+const TYPE_CONFIG = {
+  "maintenance_status":  { color: "success",  icon: "bi-tools"         },
+  "contractor_assigned": { color: "warning",  icon: "bi-person-check"  },
+  "contractor_response": { color: "primary",  icon: "bi-reply"         },
+};
+
+function getConfig(n) {
+  if (TYPE_CONFIG[n.type]) return TYPE_CONFIG[n.type];
+  // fallback: use status from data
+  const statusColors = { "Submitted": "secondary", "In Progress": "warning", "Completed": "success" };
+  return { color: statusColors[n.data?.status] || "secondary", icon: "bi-bell" };
+}
+
 const STATUS_COLORS = {
   "Submitted":   "secondary",
   "In Progress": "warning",
@@ -173,6 +186,7 @@ export default function NotificationPanel() {
               </div>
             ) : (
               notifications.map((n) => {
+                const cfg = getConfig(n);
                 const color = STATUS_COLORS[n.data?.status] || "secondary";
                 return (
                   <div
@@ -183,6 +197,10 @@ export default function NotificationPanel() {
                   >
                     <div className="d-flex align-items-start gap-2">
                       <div
+                        className={`rounded-circle bg-${cfg.color} d-flex align-items-center justify-content-center flex-shrink-0 mt-1`}
+                        style={{ width: 28, height: 28 }}
+                      >
+                        <i className={`bi ${cfg.icon} text-white`} style={{ fontSize: 12 }} />
                         className={`rounded-circle bg-${color} d-flex align-items-center justify-content-center flex-shrink-0 mt-1`}
                         style={{ width: 28, height: 28 }}
                       >

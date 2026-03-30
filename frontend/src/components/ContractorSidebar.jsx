@@ -1,3 +1,5 @@
+import NotificationPanel from "./NotificationPanel";
+
 const SIDEBAR_ITEMS = [
   { key: "requests",  icon: "bi-tools",          label: "Maintenance Requests" },
   { key: "myjobs",    icon: "bi-briefcase",       label: "My Jobs"              },
@@ -33,6 +35,9 @@ export default function ContractorSidebar({ active, onSelect }) {
             {item.label}
           </button>
         ))}
+
+        {/* Notifications */}
+        <NotificationPanel />
       </nav>
 
       <div className="px-3 py-3 border-top">
