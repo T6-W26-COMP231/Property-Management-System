@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useUser } from "../context/UserContext";
 import { getProfile, updateProfile, deleteProfilePhoto } from "../services/api";
-import Alert             from "../components/Alert";
-import Toast             from "../components/Toast";
 import ProfileEditModal  from "../components/ProfileEditModal";
+import ProfileSaveAlert  from "../components/ProfileSaveAlert";
 
 const ROLE_BADGE = {
   resident:   "success",
@@ -15,22 +15,23 @@ const DEFAULT_AVATAR = "https://placehold.co/110x110/cccccc/ffffff?text=No+Photo
 
 export default function ProfilePage() {
   const { logout, getAccessTokenSilently } = useAuth0();
+  const { dbUser } = useUser(); // ← role lives here, not in profile
 
-  const [profile,   setProfile]   = useState(null);
-  const [loading,   setLoading]   = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [saving,    setSaving]    = useState(false);
-  const [toast,     setToast]     = useState({ show: false, type: "success", message: "" });
-  const [error,     setError]     = useState("");
+  const [profile,    setProfile]    = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [showModal,  setShowModal]  = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [modalError, setModalError] = useState("");
+  const [alert,      setAlert]      = useState({ show: false, type: "success", message: "" });
 
-  // ── Load profile ──────────────────────────────────────────────────────────
+  // ── Load ──────────────────────────────────────────────────────────────────
   const load = async () => {
     try {
       const token = await getAccessTokenSilently();
       const data  = await getProfile(token);
       setProfile(data);
     } catch {
-      setToast({ show: true, type: "danger", message: "Failed to load profile." });
+      setAlert({ show: true, type: "danger", message: "Failed to load profile." });
     } finally {
       setLoading(false);
     }
@@ -38,18 +39,18 @@ export default function ProfilePage() {
 
   useEffect(() => { load(); }, []);
 
-  // ── Save from modal ───────────────────────────────────────────────────────
+  // ── Save ──────────────────────────────────────────────────────────────────
   const handleSave = async (formData) => {
     setSaving(true);
-    setError("");
+    setModalError("");
     try {
       const token   = await getAccessTokenSilently();
       const updated = await updateProfile(token, formData);
       setProfile(updated);
       setShowModal(false);
-      setToast({ show: true, type: "success", message: "Profile updated successfully!" });
+      setAlert({ show: true, type: "success", message: "Profile updated successfully!" });
     } catch {
-      setError("Failed to save. Please try again.");
+      setModalError("Failed to save. Please try again.");
     } finally {
       setSaving(false);
     }
@@ -62,15 +63,31 @@ export default function ProfilePage() {
       const token   = await getAccessTokenSilently();
       const updated = await deleteProfilePhoto(token);
       setProfile(updated);
-      setToast({ show: true, type: "success", message: "Photo removed." });
+      setAlert({ show: true, type: "success", message: "Photo removed." });
     } catch {
-      setToast({ show: true, type: "danger", message: "Failed to remove photo." });
+      setAlert({ show: true, type: "danger", message: "Failed to remove photo." });
     }
   };
 
-  const fullName = profile
+  const fullName     = profile
     ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || "—"
     : "—";
+  const role         = dbUser?.role || "";
+  const isContractor = role === "contractor";
+
+  // ── Info rows — shared fields + contractor-only jobType ───────────────────
+  const INFO_ROWS = [
+    { label: "First Name",     icon: "bi-person",    value: profile?.firstName     },
+    { label: "Last Name",      icon: "bi-person",    value: profile?.lastName      },
+    { label: "Email",          icon: "bi-envelope",  value: profile?.email         },
+    { label: "Contact Number", icon: "bi-telephone", value: profile?.contactNumber },
+    { label: "Address",        icon: "bi-house",     value: profile?.address       },
+    { label: "City",           icon: "bi-geo",       value: profile?.city          },
+    { label: "State",          icon: "bi-map",       value: profile?.state         },
+    ...(isContractor
+      ? [{ label: "Job Type", icon: "bi-tools", value: profile?.jobType }]
+      : []),
+  ];
 
   if (loading) {
     return (
@@ -94,18 +111,18 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      <Toast
-        show={toast.show}
-        type={toast.type}
-        message={toast.message}
-        onClose={() => setToast((t) => ({ ...t, show: false }))}
+      {/* ProfileSaveAlert — inline, sits between header and card */}
+      <ProfileSaveAlert
+        show={alert.show}
+        type={alert.type}
+        message={alert.message}
+        onClose={() => setAlert((a) => ({ ...a, show: false }))}
       />
 
       {/* Profile card */}
       <div className="card border-0 shadow-sm mb-4">
         <div className="card-body p-4">
           <div className="d-flex align-items-center gap-4 flex-wrap">
-            {/* Photo */}
             <div className="position-relative flex-shrink-0">
               <img
                 src={profile?.photo?.url || DEFAULT_AVATAR}
@@ -113,22 +130,27 @@ export default function ProfilePage() {
                 className="rounded-circle border shadow-sm"
                 style={{ width: 110, height: 110, objectFit: "cover" }}
               />
-              {profile?.role && (
+              {role && (
                 <span
-                  className={`badge bg-${ROLE_BADGE[profile.role] || "secondary"} position-absolute bottom-0 end-0`}
+                  className={`badge bg-${ROLE_BADGE[role] || "secondary"} position-absolute bottom-0 end-0`}
                   style={{ fontSize: 10 }}
                 >
-                  {profile.role}
+                  {role}
                 </span>
               )}
             </div>
-            {/* Name + email */}
             <div>
               <h4 className="fw-bold mb-1">{fullName}</h4>
-              <p className="text-muted mb-0">
+              <p className="text-muted mb-1">
                 <i className="bi bi-envelope me-1" />
                 {profile?.email || "—"}
               </p>
+              {/* Job type badge for contractors */}
+              {isContractor && profile?.jobType && (
+                <span className="badge bg-warning text-dark">
+                  <i className="bi bi-tools me-1" />{profile.jobType}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -142,15 +164,7 @@ export default function ProfilePage() {
         <div className="card-body p-0">
           <table className="table table-borderless mb-0">
             <tbody>
-              {[
-                { label: "First Name",     icon: "bi-person",    value: profile?.firstName     },
-                { label: "Last Name",      icon: "bi-person",    value: profile?.lastName      },
-                { label: "Email",          icon: "bi-envelope",  value: profile?.email         },
-                { label: "Contact Number", icon: "bi-telephone", value: profile?.contactNumber },
-                { label: "Address",        icon: "bi-house",     value: profile?.address       },
-                { label: "City",           icon: "bi-geo",       value: profile?.city          },
-                { label: "State",          icon: "bi-map",       value: profile?.state         },
-              ].map(({ label, icon, value }) => (
+              {INFO_ROWS.map(({ label, icon, value }) => (
                 <tr key={label} className="border-bottom">
                   <td className="text-muted ps-4 py-3" style={{ width: "35%" }}>
                     <i className={`bi ${icon} me-2`} />{label}
@@ -173,14 +187,14 @@ export default function ProfilePage() {
         <i className="bi bi-box-arrow-right me-2" />Sign Out
       </button>
 
-      {/* Edit modal — extracted into reusable component */}
+      {/* Edit Modal */}
       <ProfileEditModal
         show={showModal}
-        profile={profile}
+        profile={{ ...profile, role }}
         saving={saving}
-        error={error}
+        error={modalError}
         onSave={handleSave}
-        onClose={() => { setShowModal(false); setError(""); }}
+        onClose={() => { setShowModal(false); setModalError(""); }}
         onRemovePhoto={handleRemovePhoto}
       />
 

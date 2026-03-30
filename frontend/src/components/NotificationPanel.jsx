@@ -16,6 +16,12 @@ function getConfig(n) {
   return { color: statusColors[n.data?.status] || "secondary", icon: "bi-bell" };
 }
 
+const STATUS_COLORS = {
+  "Submitted":   "secondary",
+  "In Progress": "warning",
+  "Completed":   "success",
+};
+
 function timeAgo(date) {
   const diff = Math.floor((Date.now() - new Date(date)) / 1000);
   if (diff < 60)    return "just now";
@@ -181,6 +187,7 @@ export default function NotificationPanel() {
             ) : (
               notifications.map((n) => {
                 const cfg = getConfig(n);
+                const color = STATUS_COLORS[n.data?.status] || "secondary";
                 return (
                   <div
                     key={n._id}
@@ -194,6 +201,10 @@ export default function NotificationPanel() {
                         style={{ width: 28, height: 28 }}
                       >
                         <i className={`bi ${cfg.icon} text-white`} style={{ fontSize: 12 }} />
+                        className={`rounded-circle bg-${color} d-flex align-items-center justify-content-center flex-shrink-0 mt-1`}
+                        style={{ width: 28, height: 28 }}
+                      >
+                        <i className="bi bi-tools text-white" style={{ fontSize: 12 }} />
                       </div>
                       <div className="flex-grow-1 min-width-0">
                         <div className="fw-semibold" style={{ fontSize: 12 }}>{n.title}</div>
