@@ -26,6 +26,7 @@ const updateProfile = async (req, res) => {
     const {
       firstName, lastName, email,
       contactNumber, address, city, state,
+      jobType,
       photoBase64,
     } = req.body;
 
@@ -55,6 +56,7 @@ const updateProfile = async (req, res) => {
     if (address        !== undefined) profile.address        = address;
     if (city           !== undefined) profile.city           = city;
     if (state          !== undefined) profile.state          = state;
+    if (jobType        !== undefined) profile.jobType        = jobType;
 
     await profile.save();
     res.json(profile);
