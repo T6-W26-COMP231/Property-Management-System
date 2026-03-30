@@ -10,7 +10,7 @@ import Alert from "../../components/Alert";
 import Toast from "../../components/Toast";
 import AssignmentSuccessAlert from "../../components/AssignmentSuccessAlert";
 import RentStatusPage          from "./RentStatusPage";
-import MaintenanceRequestsPage from "./MaintenanceDashboard";
+import MaintenanceRequestsPage from "./MaintenanceRequestsPage";
 import DownloadButton          from "../../components/DownloadButton";
 
 const DEFAULT_AVATAR = "https://placehold.co/48x48/cccccc/ffffff?text=?";
