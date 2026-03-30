@@ -21,20 +21,13 @@ const PRIORITY_CONFIG = {
 };
 
 const ASSIGNMENT_STATUS_CONFIG = {
-  "Unassigned":  { badge: "secondary", icon: "bi-person-dash"   },
-  "Pending":     { badge: "info",      icon: "bi-hourglass-split"},
-  "Accepted":    { badge: "success",   icon: "bi-person-check"  },
-  "Declined":    { badge: "danger",    icon: "bi-person-x"      },
-  "In Progress": { badge: "warning",   icon: "bi-arrow-repeat"  },
-  "Completed":   { badge: "success",   icon: "bi-check-circle"  },
+  "Unassigned":  { badge: "secondary", icon: "bi-person-dash"  },
+  "Assigned":    { badge: "primary",   icon: "bi-person-check" },
+  "In Progress": { badge: "warning",   icon: "bi-arrow-repeat" },
+  "Completed":   { badge: "success",   icon: "bi-check-circle" },
 };
 
-export default function MaintenanceViewModal({
-  request              = null,
-  onClose              = () => {},
-  onSearchContractor   = null,
-  onUnassign           = null,   // if provided, shows remove contractor button
-}) {
+export default function MaintenanceViewModal({ request = null, onClose = () => {} }) {
   if (!request) return null;
 
   const status     = STATUS_CONFIG[request.status]              || STATUS_CONFIG["Submitted"];
@@ -138,6 +131,19 @@ export default function MaintenanceViewModal({
                           <i className="bi bi-tools me-1" />{request.contractor.jobType}
                         </span>
                       )}
+              </div>
+              <div className="card-body p-3">
+                {request.contractorId ? (
+                  <div className="d-flex align-items-center gap-3">
+                    <img
+                      src={DEFAULT_CONTRACTOR}
+                      alt="contractor"
+                      className="rounded-circle border"
+                      width={48} height={48}
+                      style={{ objectFit: "cover" }}
+                    />
+                    <div className="text-muted small">
+                      <i className="bi bi-envelope me-1" />contractor@email.com
                     </div>
                   </div>
                 ) : (
@@ -146,6 +152,7 @@ export default function MaintenanceViewModal({
                     <div>
                       <div className="fw-semibold small">No contractor assigned</div>
                       <div style={{ fontSize: 11 }}>Use Search Contractor to assign one</div>
+                      <div style={{ fontSize: 11 }}>Contractor will be assigned soon</div>
                     </div>
                   </div>
                 )}

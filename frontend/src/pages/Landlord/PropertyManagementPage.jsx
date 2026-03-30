@@ -9,7 +9,9 @@ import {
 import Alert from "../../components/Alert";
 import Toast from "../../components/Toast";
 import AssignmentSuccessAlert from "../../components/AssignmentSuccessAlert";
-import RentStatusPage from "./RentStatusPage";
+import RentStatusPage          from "./RentStatusPage";
+import MaintenanceRequestsPage from "./MaintenanceDashboard";
+import DownloadButton          from "../../components/DownloadButton";
 
 const DEFAULT_AVATAR = "https://placehold.co/48x48/cccccc/ffffff?text=?";
 
@@ -141,25 +143,6 @@ function AssignModal({ show, saving, error, onSave, onClose }) {
   );
 }
 
-// ── Helper: force download a file from a URL ──────────────────────────────────
-const downloadFile = async (url, fileName) => {
-  try {
-    const res  = await fetch(url);
-    const blob = await res.blob();
-    const link = document.createElement("a");
-    link.href     = URL.createObjectURL(blob);
-    link.download = fileName || "lease.pdf";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(link.href);
-  } catch (err) {
-    console.error("Download failed:", err);
-    // Fallback — open in new tab
-    window.open(url, "_blank");
-  }
-};
-
 // ── View Resident Modal ───────────────────────────────────────────────────────
 function ViewResidentModal({ assignment, onClose }) {
   if (!assignment) return null;
@@ -263,13 +246,10 @@ function ViewResidentModal({ assignment, onClose }) {
                       </td>
                       <td className="py-2">
                         {leaseDocument?.url ? (
-                          <button
-                            className="btn btn-outline-danger btn-sm"
-                            onClick={() => downloadFile(leaseDocument.url, leaseDocument.fileName)}
-                          >
-                            <i className="bi bi-download me-1" />
-                            {leaseDocument.fileName || "Download PDF"}
-                          </button>
+                          <DownloadButton
+                            url={leaseDocument.url}
+                            fileName={leaseDocument.fileName}
+                          />
                         ) : (
                           <span className="text-muted fst-italic">No document uploaded</span>
                         )}
@@ -421,7 +401,8 @@ export default function PropertyManagementPage({ property, onBack }) {
   const [modalError,    setModalError]    = useState("");
   const [toast,         setToast]         = useState({ show: false, type: "success", message: "" });
   const [assignSuccess, setAssignSuccess] = useState({ show: false, residentName: "" });
-  const [showRentStatus,setShowRentStatus]= useState(false);
+  const [showRentStatus,    setShowRentStatus]    = useState(false);
+  const [showMaintenance,   setShowMaintenance]   = useState(false);
 
   const showToast = (type, message) => setToast({ show: true, type, message });
 
@@ -492,15 +473,15 @@ export default function PropertyManagementPage({ property, onBack }) {
 
   return (
     <>
-    {/* Navigate to Rent Status Page */}
     {showRentStatus && (
-      <RentStatusPage
-        property={property}
-        onBack={() => setShowRentStatus(false)}
-      />
+      <RentStatusPage property={property} onBack={() => setShowRentStatus(false)} />
     )}
 
-    {!showRentStatus && (
+    {showMaintenance && (
+      <MaintenanceRequestsPage property={property} onBack={() => setShowMaintenance(false)} />
+    )}
+
+    {!showRentStatus && !showMaintenance && (
     <div className="p-4">
 
       {/* Header */}
@@ -514,6 +495,12 @@ export default function PropertyManagementPage({ property, onBack }) {
             <i className="bi bi-geo-alt me-1" />{property.location}
           </p>
         </div>
+        <button
+          className="btn btn-outline-warning btn-sm"
+          onClick={() => setShowMaintenance(true)}
+        >
+          <i className="bi bi-tools me-1" />Maintenance Requests
+        </button>
         <button
           className="btn btn-outline-success btn-sm"
           onClick={() => setShowRentStatus(true)}

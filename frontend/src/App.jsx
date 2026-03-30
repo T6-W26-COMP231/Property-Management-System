@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { getMe } from "./services/api";
 import { useUser } from "./context/UserContext";
-
+import { connectSocket, disconnectSocket } from "./services/socket";
 import MainRouter from './router/MainRouter';
 import NavBar from './components/Navbar';
 import ContactPage from './pages/Contact'; 
@@ -28,14 +28,16 @@ function App() {
           const me = await getMe(token);
           setDbUser(me);
         } catch {
-          setDbUser(null); // new user → needs onboarding
+          setDbUser(null); // new user → needs onboarding  
         }
+        connectSocket(token);
       } catch (err) {
         console.error("Init error:", err);
       }
     };
 
-    init();
+    init(); 
+    return () => disconnectSocket();
   }, [isAuthenticated, user, getAccessTokenSilently]);
   
   

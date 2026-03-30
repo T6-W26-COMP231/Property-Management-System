@@ -1,6 +1,8 @@
 const cloudinary  = require("cloudinary").v2;
 const Maintenance = require("../models/Maintenance");
 const Assignment  = require("../models/Assignment");
+const User        = require("../models/User");
+const Profile     = require("../models/Profile");
 
 // ── POST /api/maintenance — resident submits a request ───────────────────────
 const createRequest = async (req, res) => {
@@ -67,7 +69,27 @@ const getPropertyRequests = async (req, res) => {
     const requests   = await Maintenance
       .find({ propertyId: req.params.propertyId, landlordId })
       .sort({ createdAt: -1 });
-    res.json(requests);
+
+    // Enrich with resident email + profile photo
+    const enriched = await Promise.all(
+      requests.map(async (r) => {
+        const user    = await User.findOne({ auth0Id: r.residentId });
+        const profile = await Profile.findOne({ auth0Id: r.residentId });
+
+        // Get property location
+        const Property = require("../models/Property");
+        const property = await Property.findById(r.propertyId);
+
+        return {
+          ...r.toObject(),
+          residentEmail: user?.email           || "",
+          residentPhoto: profile?.photo?.url   || user?.picture || "",
+          propertyLocation: property?.location || "",
+        };
+      })
+    );
+
+    res.json(enriched);
   } catch (err) {
     console.error("getPropertyRequests error:", err);
     res.status(500).json({ error: "Failed to fetch requests" });
@@ -90,6 +112,17 @@ const updateStatus = async (req, res) => {
 
     request.status = status;
     await request.save();
+
+    // Send real-time notification to resident
+    const { sendNotification } = require("./notificationController");
+    await sendNotification({
+      userId:  request.residentId,
+      type:    "maintenance_status",
+      title:   "Maintenance Request Updated",
+      message: `Your request "${request.subject}" status changed to "${status}".`,
+      data:    { requestId: request._id, status, subject: request.subject },
+    });
+
     res.json(request);
   } catch (err) {
     console.error("updateStatus error:", err);
