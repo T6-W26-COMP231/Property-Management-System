@@ -80,11 +80,27 @@ const getPropertyRequests = async (req, res) => {
         const Property = require("../models/Property");
         const property = await Property.findById(r.propertyId);
 
+        // Get contractor info if assigned
+        let contractorInfo = null;
+        if (r.contractorId) {
+          const contractorUser    = await User.findOne({ auth0Id: r.contractorId });
+          const contractorProfile = await Profile.findOne({ auth0Id: r.contractorId });
+          contractorInfo = {
+            auth0Id:  r.contractorId,
+            email:    contractorUser?.email           || "",
+            photo:    contractorProfile?.photo?.url   || contractorUser?.picture || "",
+            firstName:contractorProfile?.firstName    || "",
+            lastName: contractorProfile?.lastName     || "",
+            jobType:  contractorProfile?.jobType      || "",
+          };
+        }
+
         return {
           ...r.toObject(),
-          residentEmail: user?.email           || "",
-          residentPhoto: profile?.photo?.url   || user?.picture || "",
-          propertyLocation: property?.location || "",
+          residentEmail:    user?.email           || "",
+          residentPhoto:    profile?.photo?.url   || user?.picture || "",
+          propertyLocation: property?.location    || "",
+          contractor:       contractorInfo,
         };
       })
     );
@@ -154,4 +170,151 @@ const deleteRequest = async (req, res) => {
   }
 };
 
-module.exports = { createRequest, getMyRequests, getPropertyRequests, updateStatus, deleteRequest };
+// ── GET /api/maintenance/contractors — landlord searches contractors ───────────
+const searchContractors = async (req, res) => {
+  try {
+    const { jobType, city, minRating, maxRating } = req.query;
+
+    // Find all contractor users
+    const User = require("../models/User");
+    const contractorUsers = await User.find({ role: "contractor" });
+    const contractorIds   = contractorUsers.map((u) => u.auth0Id);
+
+    // Find their profiles
+    let query = { auth0Id: { $in: contractorIds } };
+    if (jobType) query.jobType = jobType;
+    if (city)    query.city    = { $regex: city, $options: "i" };
+
+    let profiles = await Profile.find(query);
+
+    // Filter by rating range
+    if (minRating !== undefined || maxRating !== undefined) {
+      const min = parseFloat(minRating ?? 0);
+      const max = parseFloat(maxRating ?? 10);
+      profiles = profiles.filter((p) => p.averageRating >= min && p.averageRating <= max);
+    }
+
+    // Enrich with user email
+    const enriched = profiles.map((p) => {
+      const user = contractorUsers.find((u) => u.auth0Id === p.auth0Id);
+      return {
+        auth0Id:       p.auth0Id,
+        firstName:     p.firstName,
+        lastName:      p.lastName,
+        email:         user?.email || p.email,
+        photo:         p.photo?.url || "",
+        city:          p.city,
+        state:         p.state,
+        jobType:       p.jobType,
+        averageRating: p.averageRating,
+        totalRatings:  p.totalRatings,
+      };
+    });
+
+    res.json(enriched);
+  } catch (err) {
+    console.error("searchContractors error:", err);
+    res.status(500).json({ error: "Failed to search contractors" });
+  }
+};
+
+// ── PATCH /api/maintenance/:id/assign — landlord assigns contractor ────────────
+const assignContractor = async (req, res) => {
+  try {
+    const landlordId   = req.auth.payload.sub;
+    const { contractorId } = req.body;
+
+    if (!contractorId) return res.status(400).json({ error: "contractorId is required" });
+
+    const request = await Maintenance.findById(req.params.id);
+    if (!request)                          return res.status(404).json({ error: "Request not found" });
+    if (request.landlordId !== landlordId) return res.status(403).json({ error: "Access denied" });
+
+    request.contractorId     = contractorId;
+    request.assignmentStatus = "Pending";
+    await request.save();
+
+    // Notify contractor
+    const { sendNotification } = require("./notificationController");
+    await sendNotification({
+      userId:  contractorId,
+      type:    "contractor_assigned",
+      title:   "New Job Request",
+      message: `You have been assigned to a maintenance request: "${request.subject}". Please accept or decline.`,
+      data:    { requestId: request._id, subject: request.subject },
+    });
+
+    res.json(request);
+  } catch (err) {
+    console.error("assignContractor error:", err);
+    res.status(500).json({ error: "Failed to assign contractor" });
+  }
+};
+
+// ── PATCH /api/maintenance/:id/respond — contractor accepts or declines ────────
+const respondToAssignment = async (req, res) => {
+  try {
+    const contractorId = req.auth.payload.sub;
+    const { response  } = req.body; // "Accepted" | "Declined"
+
+    if (!["Accepted", "Declined"].includes(response)) {
+      return res.status(400).json({ error: "Response must be Accepted or Declined" });
+    }
+
+    const request = await Maintenance.findById(req.params.id);
+    if (!request)                             return res.status(404).json({ error: "Request not found" });
+    if (request.contractorId !== contractorId) return res.status(403).json({ error: "Access denied" });
+
+    request.assignmentStatus = response;
+    await request.save();
+
+    // Notify landlord
+    const { sendNotification } = require("./notificationController");
+    await sendNotification({
+      userId:  request.landlordId,
+      type:    "contractor_response",
+      title:   `Contractor ${response} Job`,
+      message: `A contractor has ${response.toLowerCase()} the request: "${request.subject}".`,
+      data:    { requestId: request._id, subject: request.subject, response },
+    });
+
+    res.json(request);
+  } catch (err) {
+    console.error("respondToAssignment error:", err);
+    res.status(500).json({ error: "Failed to respond to assignment" });
+  }
+};
+
+// ── PATCH /api/maintenance/:id/unassign — landlord removes contractor ─────────
+const unassignContractor = async (req, res) => {
+  try {
+    const landlordId = req.auth.payload.sub;
+    const request    = await Maintenance.findById(req.params.id);
+
+    if (!request)                          return res.status(404).json({ error: "Request not found" });
+    if (request.landlordId !== landlordId) return res.status(403).json({ error: "Access denied" });
+
+    request.contractorId     = "";
+    request.assignmentStatus = "Unassigned";
+    await request.save();
+
+    res.json(request);
+  } catch (err) {
+    console.error("unassignContractor error:", err);
+    res.status(500).json({ error: "Failed to unassign contractor" });
+  }
+};
+
+module.exports = {
+  createRequest,
+  getMyRequests,
+  getPropertyRequests,
+  updateStatus,
+  deleteRequest,
+  searchContractors,
+  assignContractor,
+  unassignContractor,
+  respondToAssignment,
+};
+
+

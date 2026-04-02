@@ -32,6 +32,16 @@ const MaintenanceSchema = new mongoose.Schema(
         publicId: { type: String, default: "" },
       },
     ],
+
+    // Contractor assignment status — tracks contractor relationship only
+    assignmentStatus: {
+      type:    String,
+      enum:    ["Unassigned", "Pending", "Accepted", "Declined"],
+      default: "Unassigned",
+    },
+
+    // Contractor — linked when assigned
+    contractorId: { type: String, default: "" },
   },
   { timestamps: true }
 );
