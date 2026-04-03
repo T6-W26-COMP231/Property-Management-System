@@ -6,6 +6,7 @@ const c = require("../controllers/maintenanceController");
 // ── Static routes FIRST (before any /:id wildcards) ──────────────────────────
 router.post("/",                      checkJwt, c.createRequest);
 router.get("/my",                     checkJwt, c.getMyRequests);
+router.get("/assigned",               checkJwt, c.getAssignedRequests);
 router.get("/contractors",            checkJwt, c.searchContractors);
 router.get("/property/:propertyId",   checkJwt, c.getPropertyRequests);
 

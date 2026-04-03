@@ -170,7 +170,41 @@ const deleteRequest = async (req, res) => {
   }
 };
 
-// ── GET /api/maintenance/contractors — landlord searches contractors ───────────
+// ── GET /api/maintenance/assigned — contractor gets their pending requests ─────
+const getAssignedRequests = async (req, res) => {
+  try {
+    const contractorId = req.auth.payload.sub;
+
+    const requests = await Maintenance
+      .find({ contractorId, assignmentStatus: "Pending" })
+      .sort({ createdAt: -1 });
+
+    // Enrich with landlord info + property location
+    const enriched = await Promise.all(
+      requests.map(async (r) => {
+        const landlordUser    = await User.findOne({ auth0Id: r.landlordId });
+        const landlordProfile = await Profile.findOne({ auth0Id: r.landlordId });
+        const Property        = require("../models/Property");
+        const property        = await Property.findById(r.propertyId);
+
+        return {
+          ...r.toObject(),
+          propertyLocation: property?.location || "",
+          landlord: {
+            name:  landlordUser?.name              || "",
+            email: landlordUser?.email             || "",
+            photo: landlordProfile?.photo?.url     || landlordUser?.picture || "",
+          },
+        };
+      })
+    );
+
+    res.json(enriched);
+  } catch (err) {
+    console.error("getAssignedRequests error:", err);
+    res.status(500).json({ error: "Failed to fetch assigned requests" });
+  }
+};
 const searchContractors = async (req, res) => {
   try {
     const { jobType, city, minRating, maxRating } = req.query;
@@ -308,6 +342,7 @@ const unassignContractor = async (req, res) => {
 module.exports = {
   createRequest,
   getMyRequests,
+  getAssignedRequests,
   getPropertyRequests,
   updateStatus,
   deleteRequest,
@@ -316,5 +351,3 @@ module.exports = {
   unassignContractor,
   respondToAssignment,
 };
-
-
