@@ -25,6 +25,13 @@ const ProfileSchema = new mongoose.Schema(
       url:      { type: String, default: "" },
       publicId: { type: String, default: "" },
     },
+
+    // Contractor only — job type
+    jobType: { type: String, default: "", trim: true },
+
+    // Contractor only — average rating (0–10, default 0)
+    averageRating: { type: Number, default: 0, min: 0, max: 10 },
+    totalRatings:  { type: Number, default: 0 },
   },
   { timestamps: true }
 );
