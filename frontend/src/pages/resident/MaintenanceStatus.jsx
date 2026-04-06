@@ -1,51 +1,7 @@
-// ── Fake data — pretend fetched from API ──────────────────────────────────────
-const FAKE_REQUESTS = [
-  {
-    id: 1,
-    subject:     "Heater not working",
-    description: "The heater in the bedroom stopped working. No heat since Monday morning.",
-    priority:    "Emergency",
-    status:      "In Progress",
-    submittedAt: "2026-03-10",
-    photo:       "https://placehold.co/400x200/E74C3C/ffffff?text=Heater+Issue",
-  },
-  {
-    id: 2,
-    subject:     "Leaking faucet",
-    description: "Kitchen faucet has been dripping for two weeks. Water pooling under the sink.",
-    priority:    "Urgent",
-    status:      "Submitted",
-    submittedAt: "2026-03-14",
-    photo:       "https://placehold.co/400x200/3498DB/ffffff?text=Leaking+Faucet",
-  },
-  {
-    id: 3,
-    subject:     "Broken window lock",
-    description: "The bedroom window lock is broken and cannot be secured properly.",
-    priority:    "Standard",
-    status:      "Completed",
-    submittedAt: "2026-03-01",
-    photo:       "https://placehold.co/400x200/95A5A6/ffffff?text=Window+Lock",
-  },
-  {
-    id: 4,
-    subject:     "Mold in bathroom ceiling",
-    description: "Black mold spotted near the bathroom vent. Growing over the past month.",
-    priority:    "Urgent",
-    status:      "Submitted",
-    submittedAt: "2026-03-16",
-    photo:       "https://placehold.co/400x200/27AE60/ffffff?text=Mold+Issue",
-  },
-  {
-    id: 5,
-    subject:     "Parking spot light out",
-    description: "The light above my parking spot has been out for a week.",
-    priority:    "Standard",
-    status:      "Completed",
-    submittedAt: "2026-02-28",
-    photo:       "https://placehold.co/400x200/F39C12/ffffff?text=Parking+Light",
-  },
-];
+import { useState, useEffect } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { getMyRequests } from "../../services/api";
+import ResidentMaintenanceViewModal from "../../components/ResidentMaintenanceViewModal";
 
 const STATUS_CONFIG = {
   "Submitted":   { badge: "secondary", icon: "bi-clock"        },
@@ -54,15 +10,50 @@ const STATUS_CONFIG = {
 };
 
 const PRIORITY_CONFIG = {
-  "Standard":  { badge: "info",    icon: "bi-flag"                      },
-  "Urgent":    { badge: "warning", icon: "bi-flag-fill"                  },
-  "Emergency": { badge: "danger",  icon: "bi-exclamation-triangle-fill"  },
+  "Standard":  { badge: "info",    icon: "bi-flag"                     },
+  "Urgent":    { badge: "warning", icon: "bi-flag-fill"                 },
+  "Emergency": { badge: "danger",  icon: "bi-exclamation-triangle-fill" },
+};
+
+const ASSIGNMENT_STATUS_CONFIG = {
+  "Unassigned": { badge: "secondary", icon: "bi-person-dash"    },
+  "Pending":    { badge: "info",      icon: "bi-hourglass-split" },
+  "Accepted":   { badge: "success",   icon: "bi-person-check"   },
+  "Declined":   { badge: "danger",    icon: "bi-person-x"       },
+};
+
+const PROGRESS_WIDTH = {
+  "Submitted":   "25%",
+  "In Progress": "60%",
+  "Completed":   "100%",
 };
 
 export default function MaintenanceStatus() {
-  const submitted   = FAKE_REQUESTS.filter((r) => r.status === "Submitted").length;
-  const inProgress  = FAKE_REQUESTS.filter((r) => r.status === "In Progress").length;
-  const completed   = FAKE_REQUESTS.filter((r) => r.status === "Completed").length;
+  const { getAccessTokenSilently } = useAuth0();
+
+  const [requests,    setRequests]    = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [viewRequest, setViewRequest] = useState(null);
+
+  // ── Load ──────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const token = await getAccessTokenSilently();
+        const data  = await getMyRequests(token);
+        setRequests(data);
+      } catch {
+        // silent fail
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  const submitted  = requests.filter((r) => r.status === "Submitted").length;
+  const inProgress = requests.filter((r) => r.status === "In Progress").length;
+  const completed  = requests.filter((r) => r.status === "Completed").length;
 
   return (
     <div className="p-4">
@@ -70,7 +61,7 @@ export default function MaintenanceStatus() {
       {/* Header */}
       <div className="mb-4">
         <h4 className="fw-bold mb-1">Maintenance Status</h4>
-        <p className="text-muted small">Track the status of your maintenance requests</p>
+        <p className="text-muted small mb-0">Track the status of your maintenance requests</p>
       </div>
 
       {/* Summary cards */}
@@ -101,73 +92,103 @@ export default function MaintenanceStatus() {
         </div>
       </div>
 
-      {/* Request cards */}
-      <div className="row g-4">
-        {FAKE_REQUESTS.map((r) => {
-          const status   = STATUS_CONFIG[r.status];
-          const priority = PRIORITY_CONFIG[r.priority];
-          return (
-            <div key={r.id} className="col-md-6 col-lg-4">
-              <div className="card border-0 shadow-sm h-100">
+      {/* Loading */}
+      {loading ? (
+        <div className="text-center py-5">
+          <div className="spinner-border text-success" />
+        </div>
+      ) : requests.length === 0 ? (
+        <div className="text-center py-5 text-muted">
+          <i className="bi bi-clipboard-x fs-1 d-block mb-2 opacity-50" />
+          <p className="fw-semibold">No maintenance requests yet</p>
+          <small>Submit a request to get started</small>
+        </div>
+      ) : (
+        <div className="row g-4">
+          {requests.map((r) => {
+            const status     = STATUS_CONFIG[r.status]              || STATUS_CONFIG["Submitted"];
+            const priority   = PRIORITY_CONFIG[r.priority]          || PRIORITY_CONFIG["Standard"];
+            const assignment = ASSIGNMENT_STATUS_CONFIG[r.assignmentStatus] || ASSIGNMENT_STATUS_CONFIG["Unassigned"];
+            const cardImage  = r.photos?.[0]?.url
+              || `https://placehold.co/400x200/e9ecef/6c757d?text=${encodeURIComponent(r.priority)}`;
 
-                {/* Photo */}
-                <img
-                  src={r.photo}
-                  alt={r.subject}
-                  className="card-img-top"
-                  style={{ height: 160, objectFit: "cover" }}
-                />
+            return (
+              <div key={r._id} className="col-md-6 col-lg-4">
+                <div className="card border-0 shadow-sm h-100">
 
-                <div className="card-body">
-                  {/* Status + Priority */}
-                  <div className="d-flex gap-2 mb-2 flex-wrap">
-                    <span className={`badge bg-${status.badge}`}>
-                      <i className={`bi ${status.icon} me-1`} />{r.status}
-                    </span>
-                    <span className={`badge bg-${priority.badge}`}>
-                      <i className={`bi ${priority.icon} me-1`} />{r.priority}
-                    </span>
+                  {/* Photo */}
+                  <img
+                    src={cardImage}
+                    alt={r.subject}
+                    className="card-img-top"
+                    style={{ height: 160, objectFit: "cover" }}
+                  />
+
+                  <div className="card-body">
+                    {/* Badges */}
+                    <div className="d-flex gap-1 flex-wrap mb-2">
+                      <span className={`badge bg-${status.badge}`}>
+                        <i className={`bi ${status.icon} me-1`} />{r.status}
+                      </span>
+                      <span className={`badge bg-${priority.badge}`}>
+                        <i className={`bi ${priority.icon} me-1`} />{r.priority}
+                      </span>
+                      <span className={`badge bg-${assignment.badge}`}>
+                        <i className={`bi ${assignment.icon} me-1`} />{r.assignmentStatus || "Unassigned"}
+                      </span>
+                    </div>
+
+                    {/* Subject */}
+                    <h6 className="fw-bold mb-1 text-truncate">{r.subject}</h6>
+
+                    {/* Description preview */}
+                    <p className="text-muted mb-2" style={{ fontSize: 12 }}>
+                      {r.description?.length > 80
+                        ? r.description.substring(0, 80) + "..."
+                        : r.description}
+                    </p>
+
+                    {/* Date */}
+                    <div className="text-muted small">
+                      <i className="bi bi-calendar me-1" />
+                      {new Date(r.createdAt).toLocaleDateString([], {
+                        year: "numeric", month: "short", day: "numeric",
+                      })}
+                    </div>
                   </div>
 
-                  {/* Subject */}
-                  <h6 className="fw-bold mb-1">{r.subject}</h6>
-
-                  {/* Description */}
-                  <p className="text-muted mb-3" style={{ fontSize: 12 }}>
-                    {r.description.length > 80
-                      ? r.description.substring(0, 80) + "..."
-                      : r.description}
-                  </p>
-
-                  {/* Date */}
-                  <div className="text-muted small">
-                    <i className="bi bi-calendar me-1" />Submitted: {r.submittedAt}
+                  {/* Progress + view button */}
+                  <div className="card-footer bg-transparent border-top px-3 pt-2 pb-3">
+                    <div className="d-flex justify-content-between small text-muted mb-1">
+                      <span>Progress</span>
+                      <span className={`text-${status.badge}`}>{r.status}</span>
+                    </div>
+                    <div className="progress mb-3" style={{ height: 6 }}>
+                      <div
+                        className={`progress-bar bg-${status.badge}`}
+                        style={{ width: PROGRESS_WIDTH[r.status] || "0%" }}
+                      />
+                    </div>
+                    <button
+                      className="btn btn-outline-success btn-sm w-100"
+                      onClick={() => setViewRequest(r)}
+                    >
+                      <i className="bi bi-eye me-1" />View Details
+                    </button>
                   </div>
+
                 </div>
-
-                {/* Progress indicator */}
-                <div className="card-footer bg-transparent border-top pt-2 pb-3 px-3">
-                  <div className="d-flex justify-content-between small text-muted mb-1">
-                    <span>Progress</span>
-                    <span className={`text-${status.badge}`}>{r.status}</span>
-                  </div>
-                  <div className="progress" style={{ height: 6 }}>
-                    <div
-                      className={`progress-bar bg-${status.badge}`}
-                      style={{
-                        width: r.status === "Submitted"   ? "25%"
-                             : r.status === "In Progress" ? "60%"
-                             : "100%"
-                      }}
-                    />
-                  </div>
-                </div>
-
               </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* View Modal */}
+      <ResidentMaintenanceViewModal
+        request={viewRequest}
+        onClose={() => setViewRequest(null)}
+      />
 
     </div>
   );
