@@ -16,5 +16,8 @@ export const assignContractor     = (token, id, contractorId) => http(`/api/main
 export const unassignContractor   = (token, id)               => http(`/api/maintenance/${id}/unassign`,  token, { method: "PATCH" });
 
 // Contractor
-export const getAssignedRequests  = (token)                  => http("/api/maintenance/assigned",             token);
-export const respondToAssignment  = (token, id, response)    => http(`/api/maintenance/${id}/respond`,        token, { method: "PATCH", body: { response } });
+export const getAssignedRequests    = (token)                  => http("/api/maintenance/assigned",                  token);
+export const getMyJobs              = (token)                  => http("/api/maintenance/my-jobs",                   token);
+export const getPastJobs            = (token)                  => http("/api/maintenance/past-jobs",                 token);
+export const contractorUpdateStatus = (token, id, status)      => http(`/api/maintenance/${id}/contractor-status`,   token, { method: "PATCH", body: { status } });
+export const respondToAssignment    = (token, id, response)    => http(`/api/maintenance/${id}/respond`,             token, { method: "PATCH", body: { response } });

@@ -170,6 +170,120 @@ const deleteRequest = async (req, res) => {
   }
 };
 
+// ── GET /api/maintenance/past-jobs — contractor gets their completed jobs ──────
+const getPastJobs = async (req, res) => {
+  try {
+    const contractorId = req.auth.payload.sub;
+
+    const requests = await Maintenance
+      .find({ contractorId, assignmentStatus: "Accepted", status: "Completed" })
+      .sort({ updatedAt: -1 });
+
+    const enriched = await Promise.all(
+      requests.map(async (r) => {
+        const landlordUser    = await User.findOne({ auth0Id: r.landlordId });
+        const landlordProfile = await Profile.findOne({ auth0Id: r.landlordId });
+        const Property        = require("../models/Property");
+        const property        = await Property.findById(r.propertyId);
+
+        return {
+          ...r.toObject(),
+          propertyLocation: property?.location || "",
+          landlord: {
+            name:  landlordUser?.name            || "",
+            email: landlordUser?.email           || "",
+            photo: landlordProfile?.photo?.url   || landlordUser?.picture || "",
+          },
+        };
+      })
+    );
+
+    res.json(enriched);
+  } catch (err) {
+    console.error("getPastJobs error:", err);
+    res.status(500).json({ error: "Failed to fetch past jobs" });
+  }
+};
+
+// ── GET /api/maintenance/my-jobs — contractor gets their accepted jobs ────────
+const getMyJobs = async (req, res) => {
+  try {
+    const contractorId = req.auth.payload.sub;
+
+    const requests = await Maintenance
+      .find({ contractorId, assignmentStatus: "Accepted", status: { $ne: "Completed" } })
+      .sort({ createdAt: -1 });
+
+    const enriched = await Promise.all(
+      requests.map(async (r) => {
+        const landlordUser    = await User.findOne({ auth0Id: r.landlordId });
+        const landlordProfile = await Profile.findOne({ auth0Id: r.landlordId });
+        const Property        = require("../models/Property");
+        const property        = await Property.findById(r.propertyId);
+
+        return {
+          ...r.toObject(),
+          propertyLocation: property?.location || "",
+          landlord: {
+            name:  landlordUser?.name              || "",
+            email: landlordUser?.email             || "",
+            photo: landlordProfile?.photo?.url     || landlordUser?.picture || "",
+          },
+        };
+      })
+    );
+
+    res.json(enriched);
+  } catch (err) {
+    console.error("getMyJobs error:", err);
+    res.status(500).json({ error: "Failed to fetch jobs" });
+  }
+};
+
+// ── PATCH /api/maintenance/:id/contractor-status — contractor updates job status
+const contractorUpdateStatus = async (req, res) => {
+  try {
+    const contractorId = req.auth.payload.sub;
+    const { status }   = req.body;
+
+    if (!["In Progress", "Completed"].includes(status)) {
+      return res.status(400).json({ error: "Contractor can only set In Progress or Completed" });
+    }
+
+    const request = await Maintenance.findById(req.params.id);
+    if (!request)                              return res.status(404).json({ error: "Request not found" });
+    if (request.contractorId !== contractorId) return res.status(403).json({ error: "Access denied" });
+
+    request.status = status;
+    await request.save();
+
+    const { sendNotification } = require("./notificationController");
+
+    // Notify resident
+    await sendNotification({
+      userId:  request.residentId,
+      type:    "maintenance_status",
+      title:   "Maintenance Request Updated",
+      message: `Your request "${request.subject}" has been updated to "${status}" by the contractor.`,
+      data:    { requestId: request._id, status, subject: request.subject },
+    });
+
+    // Notify landlord
+    await sendNotification({
+      userId:  request.landlordId,
+      type:    "maintenance_status",
+      title:   "Job Status Updated",
+      message: `Contractor updated "${request.subject}" to "${status}".`,
+      data:    { requestId: request._id, status, subject: request.subject },
+    });
+
+    res.json(request);
+  } catch (err) {
+    console.error("contractorUpdateStatus error:", err);
+    res.status(500).json({ error: "Failed to update job status" });
+  }
+};
+
 // ── GET /api/maintenance/assigned — contractor gets their pending requests ─────
 const getAssignedRequests = async (req, res) => {
   try {
@@ -342,9 +456,12 @@ const unassignContractor = async (req, res) => {
 module.exports = {
   createRequest,
   getMyRequests,
+  getMyJobs,
+  getPastJobs,
   getAssignedRequests,
   getPropertyRequests,
   updateStatus,
+  contractorUpdateStatus,
   deleteRequest,
   searchContractors,
   assignContractor,
