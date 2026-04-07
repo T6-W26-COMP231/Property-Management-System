@@ -1,3 +1,5 @@
+import NotificationPanel from "./NotificationPanel";
+
 const SIDEBAR_ITEMS = [
   { key: "properties", icon: "bi-building",       label: "Property Dashboard" },
   { key: "completed",  icon: "bi-clipboard-check", label: "Completed Requests" },
@@ -33,6 +35,9 @@ export default function LandlordSidebar({ active, onSelect }) {
             {item.label}
           </button>
         ))}
+
+        {/* Notifications */}
+        <NotificationPanel />
       </nav>
 
       {/* Footer */}
