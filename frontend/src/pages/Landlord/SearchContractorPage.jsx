@@ -123,7 +123,7 @@ export default function SearchContractorPage({ request, onBack, onAssigned }) {
                 <div className="card border-0 shadow-sm h-100">
                   <div className="card-body p-3">
 
-                    {/* Photo + name */}
+                    {/* Photo + name row */}
                     <div className="d-flex align-items-center gap-3 mb-3">
                       <img
                         src={c.photo || DEFAULT_AVATAR}
@@ -132,22 +132,22 @@ export default function SearchContractorPage({ request, onBack, onAssigned }) {
                         width={56} height={56}
                         style={{ objectFit: "cover" }}
                       />
-                      <div className="min-width-0">
-                        <div className="fw-bold text-truncate">{fullName(c)}</div>
-                        <div className="text-muted small text-truncate">
-                          <i className="bi bi-envelope me-1" />{c.email || "—"}
-                        </div>
-                      </div>
+                      <div className="fw-bold">{fullName(c)}</div>
                     </div>
 
                     {/* Job type */}
                     {c.jobType && (
-                      <div className="mb-2">
+                      <div className="mb-1">
                         <span className="badge bg-warning text-dark">
                           <i className="bi bi-tools me-1" />{c.jobType}
                         </span>
                       </div>
                     )}
+
+                    {/* Email — profile email preferred */}
+                    <div className="text-muted small text-truncate mb-2">
+                      <i className="bi bi-envelope me-1" />{c.profileEmail || c.email || "—"}
+                    </div>
 
                     {/* Location */}
                     <div className="text-muted small mb-2">
@@ -196,7 +196,6 @@ export default function SearchContractorPage({ request, onBack, onAssigned }) {
       <ContractorRatingModal
         show={!!ratingModal}
         contractor={ratingModal}
-        ratings={[]}
         onClose={() => setRatingModal(null)}
       />
 
