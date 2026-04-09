@@ -11,6 +11,7 @@ const profileRoutes     = require("./routes/profile");
 const assignmentRoutes  = require("./routes/assignments");
 const maintenanceRoutes = require("./routes/maintenance");
 const notificationRoutes = require("./routes/notifications");
+const ratingRoutes = require("./routes/ratings");
 
 const app    = express();
 const server = http.createServer(app);
@@ -36,6 +37,7 @@ app.use("/api/profile",      profileRoutes);
 app.use("/api/assignments",   assignmentRoutes);
 app.use("/api/maintenance",  maintenanceRoutes);
 app.use("/api/notifications",  notificationRoutes);
+app.use("/api/ratings",  ratingRoutes);
 // ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 
