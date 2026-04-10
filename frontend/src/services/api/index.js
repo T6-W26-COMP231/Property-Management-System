@@ -10,3 +10,4 @@ export * from "./profileApi";
 export * from "./assignmentApi";
 export * from "./maintenanceApi";
 export * from "./notificationApi";
+export * from "./ratingApi";

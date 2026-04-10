@@ -6,8 +6,9 @@ export const getMyRequests        = (token)                  => http("/api/maint
 export const deleteRequest        = (token, id)              => http(`/api/maintenance/${id}`,                token, { method: "DELETE" });
 
 // Landlord
-export const getPropertyRequests  = (token, propertyId)     => http(`/api/maintenance/property/${propertyId}`,token);
-export const updateStatus         = (token, id, status)      => http(`/api/maintenance/${id}/status`,         token, { method: "PATCH", body: { status } });
+export const getPropertyRequests          = (token, propertyId)     => http(`/api/maintenance/property/${propertyId}`,token);
+export const getLandlordCompletedRequests = (token)                  => http("/api/maintenance/completed",            token);
+export const updateStatus                 = (token, id, status)      => http(`/api/maintenance/${id}/status`,         token, { method: "PATCH", body: { status } });
 export const searchContractors    = (token, filters = {})   => {
   const params = new URLSearchParams(filters).toString();
   return http(`/api/maintenance/contractors${params ? `?${params}` : ""}`, token);
