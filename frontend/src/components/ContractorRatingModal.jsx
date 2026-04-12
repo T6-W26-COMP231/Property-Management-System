@@ -1,11 +1,14 @@
 // ── Usage ─────────────────────────────────────────────────────────────────────
 // <ContractorRatingModal
 //   show={showRating}
-//   contractor={contractor}   // { firstName, lastName, email, photo, jobType, averageRating, totalRatings }
-//   ratings={[]}              // [] for now — will be fetched later
+//   contractor={contractor}
 //   onClose={() => {}}
 // />
 // ─────────────────────────────────────────────────────────────────────────────
+
+import { useState, useEffect } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
+import { getContractorRatings } from "../services/api";
 
 const DEFAULT_AVATAR = "https://placehold.co/56x56/cccccc/ffffff?text=?";
 
@@ -34,17 +37,47 @@ function RatingCircle({ rating }) {
   );
 }
 
-export default function ContractorRatingModal({
-  show        = false,
-  contractor  = null,
-  ratings     = [],       // empty for now — functional later
-  onClose     = () => {},
-}) {
-  if (!show || !contractor) return null;
+function timeAgo(date) {
+  return new Date(date).toLocaleDateString([], {
+    year: "numeric", month: "short", day: "numeric",
+  });
+}
 
-  const fullName = [contractor.firstName, contractor.lastName].filter(Boolean).join(" ") || "—";
-  const avg      = contractor.averageRating ?? 0;
-  const total    = contractor.totalRatings  ?? 0;
+export default function ContractorRatingModal({
+  show       = false,
+  contractor = null,
+  onClose    = () => {},
+}) {
+  const { getAccessTokenSilently } = useAuth0();
+
+  const [ratings,  setRatings]  = useState([]);
+  const [loading,  setLoading]  = useState(false);
+
+  const fullName = [contractor?.firstName, contractor?.lastName].filter(Boolean).join(" ") || "—";
+  const avg      = contractor?.averageRating ?? 0;
+  const total    = contractor?.totalRatings  ?? 0;
+
+  // ── Fetch ratings when modal opens ────────────────────────────────────────
+  useEffect(() => {
+    if (!show || !contractor?.auth0Id) return;
+
+    const load = async () => {
+      setLoading(true);
+      try {
+        const token = await getAccessTokenSilently();
+        const data  = await getContractorRatings(token, contractor.auth0Id);
+        setRatings(data);
+      } catch {
+        setRatings([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [show, contractor?.auth0Id]);
+
+  if (!show || !contractor) return null;
 
   return (
     <div className="modal show d-block" style={{ background: "rgba(0,0,0,0.5)" }}>
@@ -86,7 +119,7 @@ export default function ContractorRatingModal({
             {/* Average rating */}
             <div className="card border-0 bg-light rounded-3 mb-4">
               <div className="card-body p-3">
-                <div className="d-flex align-items-center gap-3 mb-3">
+                <div className="d-flex align-items-center gap-3 mb-2">
                   <RatingCircle rating={avg} />
                   <div className="flex-grow-1">
                     <div className="fw-bold mb-1">Average Rating</div>
@@ -104,7 +137,11 @@ export default function ContractorRatingModal({
               <i className="bi bi-clock-history me-1" />Review History
             </div>
 
-            {ratings.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-4">
+                <div className="spinner-border text-warning" />
+              </div>
+            ) : ratings.length === 0 ? (
               <div className="text-center py-4 text-muted">
                 <i className="bi bi-star fs-1 d-block mb-2 opacity-25" />
                 <div className="fw-semibold">No reviews yet</div>
@@ -114,26 +151,57 @@ export default function ContractorRatingModal({
               </div>
             ) : (
               <div className="d-flex flex-column gap-3">
-                {ratings.map((r, i) => (
-                  <div key={i} className="card border-0 bg-light rounded-3">
-                    <div className="card-body p-3">
-                      <div className="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
-                        <div className="text-muted small">{r.landlordEmail}</div>
-                        <div className="d-flex align-items-center gap-2">
-                          <span className={`badge bg-${r.rating >= 8 ? "success" : r.rating >= 5 ? "warning" : "danger"}`}>
-                            {r.rating}/10
-                          </span>
-                          <span className="text-muted" style={{ fontSize: 11 }}>{r.date}</span>
+                {ratings.map((r) => {
+                  const color = r.rating >= 8 ? "success" : r.rating >= 5 ? "warning" : "danger";
+                  return (
+                    <div key={r._id} className="card border-0 bg-light rounded-3">
+                      <div className="card-body p-3">
+
+                        {/* Landlord + rating */}
+                        <div className="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+                          <div className="d-flex align-items-center gap-2">
+                            <img
+                              src={r.landlord?.photo || DEFAULT_AVATAR}
+                              alt={r.landlord?.name}
+                              className="rounded-circle border flex-shrink-0"
+                              width={32} height={32}
+                              style={{ objectFit: "cover" }}
+                            />
+                            <div>
+                              <div className="fw-semibold small">{r.landlord?.name || "—"}</div>
+                              <div className="text-muted" style={{ fontSize: 11 }}>
+                                {r.landlord?.email || "—"}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="d-flex align-items-center gap-2">
+                            <span className={`badge bg-${color} fs-6 px-2 py-1`}>
+                              {r.rating}/10
+                            </span>
+                            <span className="text-muted" style={{ fontSize: 11 }}>
+                              {timeAgo(r.createdAt)}
+                            </span>
+                          </div>
                         </div>
+
+                        {/* Star bar */}
+                        <StarBar rating={r.rating} />
+
+                        {/* Comment */}
+                        {r.comment && (
+                          <div
+                            className="text-muted small mt-2 p-2 bg-white rounded-3"
+                            style={{ lineHeight: 1.6 }}
+                          >
+                            <i className="bi bi-chat-quote me-1 text-secondary" />
+                            {r.comment}
+                          </div>
+                        )}
+
                       </div>
-                      {r.comment && (
-                        <div className="text-muted small" style={{ lineHeight: 1.6 }}>
-                          <i className="bi bi-chat-quote me-1" />{r.comment}
-                        </div>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 

@@ -319,6 +319,53 @@ const getAssignedRequests = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch assigned requests" });
   }
 };
+
+// ── GET /api/maintenance/completed — landlord gets all completed requests ──────
+const getLandlordCompletedRequests = async (req, res) => {
+  try {
+    const landlordId = req.auth.payload.sub;
+
+    const requests = await Maintenance
+      .find({ landlordId, status: "Completed" })
+      .sort({ updatedAt: -1 });
+
+    const enriched = await Promise.all(
+      requests.map(async (r) => {
+        const residentUser    = await User.findOne({ auth0Id: r.residentId });
+        const residentProfile = await Profile.findOne({ auth0Id: r.residentId });
+        const Property        = require("../models/Property");
+        const property        = await Property.findById(r.propertyId);
+
+        let contractor = null;
+        if (r.contractorId) {
+          const contractorUser    = await User.findOne({ auth0Id: r.contractorId });
+          const contractorProfile = await Profile.findOne({ auth0Id: r.contractorId });
+          contractor = {
+            firstName: contractorProfile?.firstName  || "",
+            lastName:  contractorProfile?.lastName   || "",
+            email:     contractorUser?.email         || "",
+            photo:     contractorProfile?.photo?.url || contractorUser?.picture || "",
+            jobType:   contractorProfile?.jobType    || "",
+          };
+        }
+
+        return {
+          ...r.toObject(),
+          residentEmail:    residentUser?.email           || "",
+          residentPhoto:    residentProfile?.photo?.url   || residentUser?.picture || "",
+          propertyLocation: property?.location            || "",
+          contractor,
+        };
+      })
+    );
+
+    res.json(enriched);
+  } catch (err) {
+    console.error("getLandlordCompletedRequests error:", err);
+    res.status(500).json({ error: "Failed to fetch completed requests" });
+  }
+};
+
 const searchContractors = async (req, res) => {
   try {
     const { jobType, city, minRating, maxRating } = req.query;
@@ -349,7 +396,8 @@ const searchContractors = async (req, res) => {
         auth0Id:       p.auth0Id,
         firstName:     p.firstName,
         lastName:      p.lastName,
-        email:         user?.email || p.email,
+        email:         user?.email || "",
+        profileEmail:  p.email     || "",
         photo:         p.photo?.url || "",
         city:          p.city,
         state:         p.state,
@@ -459,6 +507,7 @@ module.exports = {
   getMyJobs,
   getPastJobs,
   getAssignedRequests,
+  getLandlordCompletedRequests,
   getPropertyRequests,
   updateStatus,
   contractorUpdateStatus,

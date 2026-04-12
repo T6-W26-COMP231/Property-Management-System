@@ -9,6 +9,7 @@ router.get("/my",                     checkJwt, c.getMyRequests);
 router.get("/assigned",               checkJwt, c.getAssignedRequests);
 router.get("/my-jobs",                checkJwt, c.getMyJobs);
 router.get("/past-jobs",              checkJwt, c.getPastJobs);
+router.get("/completed",              checkJwt, c.getLandlordCompletedRequests);
 router.get("/contractors",            checkJwt, c.searchContractors);
 router.get("/property/:propertyId",   checkJwt, c.getPropertyRequests);
 
