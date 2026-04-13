@@ -13,7 +13,9 @@ const initSocket = (server) => {
     cors: {
       origin:  process.env.CLIENT_URL || "http://localhost:5173",
       methods: ["GET", "POST"],
+      credentials: true,
     },
+    transports: ['polling', 'websocket'] // fallback to polling if websocket fails
   });
 
   ioInstance = io;

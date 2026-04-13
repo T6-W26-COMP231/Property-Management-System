@@ -130,7 +130,7 @@ export default function NavBar() {
                   onClick={() => navigate("/profile")}
                 >
                   <span className={`badge bg-${ROLE_BADGES[dbUser.role]}`}>
-                    {dbUser.role.charAt(0).toUpperCase() + dbUser.role.slice(1)}
+                    {dbUser?.role ? dbUser.role.charAt(0).toUpperCase() + dbUser.role.slice(1) : "Guest"};
                   </span>
                   <span className="text-white fw-semibold small">{dbUser.name}</span>
                 </div>
@@ -151,7 +151,7 @@ export default function NavBar() {
                 </button>
                 <button
                   className="btn btn-light btn-sm fw-semibold"
-                  onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: "signup" } })}
+                  onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: "signup", prompt: "login" } })}
                 >
                   <i className="bi bi-person-plus me-1" />Sign Up
                 </button>

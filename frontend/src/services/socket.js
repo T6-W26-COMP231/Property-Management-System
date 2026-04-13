@@ -9,7 +9,8 @@ export const connectSocket = (token) => {
 
   socket = io(SERVER_URL, {
     auth:       { token },
-    transports: ["websocket", "polling"],
+    autoConnect: false, // manually connect after setting auth
+    withCredentials: true,
     reconnection:         true,
     reconnectionAttempts: 5,
     reconnectionDelay:    1000,
