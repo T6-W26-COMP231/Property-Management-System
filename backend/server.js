@@ -14,7 +14,9 @@ const assignmentRoutes  = require("./routes/assignments");
 const maintenanceRoutes = require("./routes/maintenance");
 const notificationRoutes = require("./routes/notifications");
 const ratingRoutes = require("./routes/ratings");
-const { initSocket } = require('./socket/socketHandler');
+
+const { initSocket } = require("./socket/socketHandler");
+
 const app    = express();
 const server = http.createServer(app);
 
@@ -46,6 +48,9 @@ app.use("/api/ratings", ratingRoutes);
 initSocket(server);
 // ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
+
+// Attaching socket.io to the server
+initSocket(server);
 
 mongoose
   .connect(process.env.MONGO_URI)
