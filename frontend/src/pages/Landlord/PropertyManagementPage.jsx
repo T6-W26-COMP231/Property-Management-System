@@ -6,6 +6,7 @@ import {
   updateAssignment,
   deleteAssignment,
 } from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import Alert from "../../components/Alert";
 import Toast from "../../components/Toast";
 import AssignmentSuccessAlert from "../../components/AssignmentSuccessAlert";
@@ -390,6 +391,7 @@ function EditLeaseModal({ assignment, saving, error, onSave, onClose }) {
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PropertyManagementPage({ property, onBack }) {
+  const navigate = useNavigate();
   const { getAccessTokenSilently } = useAuth0();
 
   const [assignments,   setAssignments]   = useState([]);
@@ -574,6 +576,13 @@ export default function PropertyManagementPage({ property, onBack }) {
                           onClick={() => setViewAssignment(a)}
                         >
                           <i className="bi bi-eye" />
+                        </button>
+                        <button
+                          className="btn btn-outline-success btn-sm"
+                          title="Message resident"
+                          onClick={() => navigate("/messages", { state: { initialUserId: a.residentId } })}
+                        >
+                          <i className="bi bi-chat-dots" />
                         </button>
                         <button
                           className="btn btn-outline-warning btn-sm"
