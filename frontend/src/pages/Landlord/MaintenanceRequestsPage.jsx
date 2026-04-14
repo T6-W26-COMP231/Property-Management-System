@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
 import { getPropertyRequests, updateStatus, unassignContractor } from "../../services/api";
 import MaintenanceEditModal    from "../../components/MaintenanceEditModal";
 import MaintenanceViewModal    from "../../components/MaintenanceViewModal";
@@ -22,21 +23,22 @@ const PRIORITY_CONFIG = {
 };
 
 const ASSIGNMENT_STATUS_CONFIG = {
-  "Unassigned":  { badge: "secondary", icon: "bi-person-dash"  },
-  "Assigned":    { badge: "primary",   icon: "bi-person-check" },
-  "In Progress": { badge: "warning",   icon: "bi-arrow-repeat" },
-  "Completed":   { badge: "success",   icon: "bi-check-circle" },
+  "Unassigned": { badge: "secondary", icon: "bi-person-dash"    },
+  "Pending":    { badge: "info",      icon: "bi-hourglass-split" },
+  "Accepted":   { badge: "success",   icon: "bi-person-check"   },
+  "Declined":   { badge: "danger",    icon: "bi-person-x"       },
 };
 
 export default function MaintenanceRequestsPage({ property, onBack }) {
   const { getAccessTokenSilently } = useAuth0();
+  const navigate = useNavigate();
 
   const [requests,    setRequests]    = useState([]);
   const [loading,     setLoading]     = useState(true);
   const [page,        setPage]        = useState(1);
-  const [viewRequest, setViewRequest] = useState(null);
-  const [editRequest, setEditRequest] = useState(null);
-  const [searchRequest,setSearchRequest]=useState(null); // navigate to search contractor
+  const [viewRequest,   setViewRequest]   = useState(null);
+  const [editRequest,   setEditRequest]   = useState(null);
+  const [searchRequest, setSearchRequest] = useState(null);
   const [saving,      setSaving]      = useState(false);
   const [modalError,  setModalError]  = useState("");
   const [toast,       setToast]       = useState({ show: false, type: "success", message: "" });
@@ -103,6 +105,7 @@ export default function MaintenanceRequestsPage({ property, onBack }) {
     );
   }
 
+  // Navigate to MessagesPage
   // ── Summary counts — all statuses ─────────────────────────────────────────
   const counts = {
     submitted:  requests.filter((r) => r.status === "Submitted").length,
@@ -198,7 +201,7 @@ export default function MaintenanceRequestsPage({ property, onBack }) {
                       <h6 className="fw-bold mb-1 text-truncate">{r.subject}</h6>
 
                       {/* Resident */}
-                      <div className="d-flex align-items-center gap-2 mb-2">
+                      <div className="d-flex align-items-center gap-2 mb-1">
                         <img
                           src={r.residentPhoto || DEFAULT_AVATAR}
                           alt="resident"
@@ -208,6 +211,23 @@ export default function MaintenanceRequestsPage({ property, onBack }) {
                         />
                         <span className="text-muted small text-truncate">{r.residentEmail}</span>
                       </div>
+
+                      {/* Contractor row — show if assigned */}
+                      {r.contractor && (
+                        <div className="d-flex align-items-center gap-2 mb-1">
+                          <img
+                            src={r.contractor.photo || DEFAULT_AVATAR}
+                            alt="contractor"
+                            className="rounded-circle border flex-shrink-0"
+                            width={24} height={24}
+                            style={{ objectFit: "cover" }}
+                          />
+                          <span className="text-muted small text-truncate">
+                            <i className="bi bi-tools me-1 text-warning" />
+                            {[r.contractor.firstName, r.contractor.lastName].filter(Boolean).join(" ") || r.contractor.email}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Date */}
                       <div className="text-muted small">
@@ -224,6 +244,16 @@ export default function MaintenanceRequestsPage({ property, onBack }) {
                       >
                         <i className="bi bi-eye me-1" />View
                       </button>
+                      {/* Message contractor if assigned */}
+                      {r.contractorId && (
+                        <button
+                          className="btn btn-outline-success btn-sm"
+                          title="Message contractor"
+                          onClick={() => navigate("/messages", { state: { initialUserId: r.contractorId } })}
+                        >
+                          <i className="bi bi-chat-dots" />
+                        </button>
+                      )}
                       <button
                         className="btn btn-outline-warning btn-sm flex-grow-1"
                         onClick={() => { setEditRequest(r); setModalError(""); }}
