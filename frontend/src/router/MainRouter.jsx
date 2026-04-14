@@ -1,12 +1,11 @@
 // frontend/src/router/MainRouter.jsx
-import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useUser } from "../context/UserContext";
 import Home from '../pages/Home';
 import Contact from '../pages/Contact';
 import MessagesLayoutPage from '../pages/MessagesPage';
 import ProfilePage       from "../pages/ProfilePage";
-import LandlordDashboard from "../pages/Landlord/LandlordDashboard";
+import LandlordDashboard from "../pages/landlord/LandlordDashboard";
 import ResidentDashboard from "../pages/resident/ResidentDashboard";
 import ContractorDashboard from "../pages/contractor/ContractorDashboard";
 const MainRouter = () => {

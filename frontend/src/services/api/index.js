@@ -5,6 +5,8 @@
 //   import { getMe, getRooms, getMessages } from "../services/api";
 
 export * from "./userApi";
+export * from "./roomApi";
+export * from "./messageApi";
 export * from "./propertyApi";
 export * from "./profileApi";
 export * from "./assignmentApi";
