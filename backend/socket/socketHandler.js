@@ -83,12 +83,37 @@ const initSocket = (server) => {
           read:       saved.read,
         });
 
+        // Notify other user if online
+        const { sendNotification } = require("../controllers/notificationController");
+        const receiverSocketId = onlineUsers[otherId];
+        if (receiverSocketId) {
+          io.to(receiverSocketId).emit("new_message_notification", {
+            from:    senderName,
+            roomId,
+            preview: saved.message.substring(0, 60),
+          });
+        }
       } catch (err) {
         console.error("send_dm error:", err);
       }
     });
 
-    // ── Typing indicator ────────────────────────────────────────────────────
+    // ── Delete DM ───────────────────────────────────────────────────────────
+    socket.on("delete_dm", async ({ roomId, messageId }) => {
+      try {
+        const msg = await Message.findById(messageId);
+        if (!msg || msg.senderId !== userId) return;
+
+        msg.message = "This message was deleted";
+        msg.deleted = true;
+        await msg.save();
+
+        // Broadcast to everyone in the room including sender
+        io.to(roomId).emit("message_deleted", { messageId });
+      } catch (err) {
+        console.error("delete_dm error:", err);
+      }
+    });
     socket.on("typing", ({ roomId, isTyping, senderName }) => {
       socket.to(roomId).emit("user_typing", { isTyping, senderName });
     });

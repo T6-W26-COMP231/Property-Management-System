@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
 import { getPastJobs } from "../../services/api";
 import PastJobViewModal from "../../components/PastJobViewModal";
 
@@ -15,6 +16,7 @@ const PRIORITY_CONFIG = {
 
 export default function PastJobHistory() {
   const { getAccessTokenSilently } = useAuth0();
+  const navigate = useNavigate();
 
   const [jobs,    setJobs]    = useState([]);
   const [loading, setLoading] = useState(true);
@@ -125,12 +127,19 @@ export default function PastJobHistory() {
                       </div>
                     </div>
 
-                    <div className="card-footer bg-transparent border-top-0 pb-3 px-3">
+                    <div className="card-footer bg-transparent border-top-0 pb-3 px-3 d-flex gap-2">
                       <button
-                        className="btn btn-outline-primary btn-sm w-100"
+                        className="btn btn-outline-primary btn-sm flex-grow-1"
                         onClick={() => setViewJob(j)}
                       >
                         <i className="bi bi-eye me-1" />View Details
+                      </button>
+                      <button
+                        className="btn btn-outline-success btn-sm"
+                        title="Message landlord"
+                        onClick={() => navigate("/messages", { state: { initialUserId: j.landlordId } })}
+                      >
+                        <i className="bi bi-chat-dots" />
                       </button>
                     </div>
 

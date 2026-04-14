@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
 import { getAssignedRequests, respondToAssignment } from "../../services/api";
 import AcceptDeclineButtons from "../../components/AcceptDeclineButtons";
 import Toast from "../../components/Toast";
@@ -128,6 +129,7 @@ function ViewModal({ request, responding, onClose, onAccept, onDecline }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MaintenanceRequests() {
   const { getAccessTokenSilently } = useAuth0();
+  const navigate = useNavigate();
 
   const [requests,    setRequests]    = useState([]);
   const [loading,     setLoading]     = useState(true);
@@ -263,6 +265,13 @@ export default function MaintenanceRequests() {
                         onClick={() => setViewRequest(r)}
                       >
                         <i className="bi bi-eye me-1" />View
+                      </button>
+                      <button
+                        className="btn btn-outline-success btn-sm"
+                        title="Message landlord"
+                        onClick={() => navigate("/messages", { state: { initialUserId: r.landlordId } })}
+                      >
+                        <i className="bi bi-chat-dots" />
                       </button>
                       <AcceptDeclineButtons
                         id={r._id}
