@@ -13,9 +13,12 @@
     "@auth0/auth0-react": "^2.15.1",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
+    "cloudinary": "^2.2.0",
+    "express-oauth2-jwt-bearer": "^1.6.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.13.1"
+    "react-router-dom": "^7.13.1",
+    "socket.io-client": "^4.8.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

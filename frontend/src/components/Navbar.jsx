@@ -1,5 +1,6 @@
-
 import logo from '../assets/Logo.jpeg';
+import React, {useState} from 'react';
+import { Link } from 'react-router-dom';
 
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
@@ -14,7 +15,7 @@ import { useUser } from "../context/UserContext";
 const PRIVATE_NAV_ITEMS = [
   { path: "/",         icon: "bi-house",         label: "Home"              },
   { path: "/messages", icon: "bi-chat-dots",     label: "Messages"          },
-  { path: "/cotact",  icon: "bi-headset",       label: "Technical Support" },
+  { path: "/contact",  icon: "bi-headset",       label: "Technical Support" },
   { path: "/profile",  icon: "bi-person-circle", label: "Profile"           },
 ];
 
@@ -28,6 +29,11 @@ const LANDLORD_NAV_ITEMS = [
 
 // Extra — shown only for landlords
 const LANDLORD_NAV_ITEM = { path: "/landlord", icon: "bi-speedometer2", label: "My Dashboard" };
+// Extra — shown only for residents
+const RESIDENT_NAV_ITEM  = { path: "/resident",  icon: "bi-speedometer2", label: "My Dashboard" };
+
+// Extra — shown only for contractors
+const CONTRACTOR_NAV_ITEM = { path: "/contractor", icon: "bi-speedometer2", label: "My Dashboard" };
 
 const ROLE_BADGES = {
   resident:   "success",
@@ -36,20 +42,37 @@ const ROLE_BADGES = {
 };
 
 export default function NavBar() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false); //mobile menu state
   const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
   const { dbUser }   = useUser();
   const navigate     = useNavigate();
   const location     = useLocation();
 
-  const isActive = (path) =>
-    location.pathname === path || location.pathname.startsWith(path + "/");
-
+  const isActive = (path) => {
+      if (path === "/") return location.pathname === "/";
+    return location.pathname === path || location.pathname.startsWith(path + "/");
+  }
   // Build nav items based on role
+  const getDashboardItem = () => {
+    if (dbUser?.role === "landlord")    return LANDLORD_NAV_ITEM;
+    if (dbUser?.role === "resident")    return RESIDENT_NAV_ITEM;
+    if (dbUser?.role === "contractor")  return CONTRACTOR_NAV_ITEM;
+    return null;
+  };
+
+  const dashboardItem = getDashboardItem();
   const navItems = isAuthenticated
-    ? dbUser?.role === "landlord"
-      ? [...LANDLORD_NAV_ITEMS, LANDLORD_NAV_ITEM]
+    ? dashboardItem
+      ? [...(dbUser?.role === "landlord" ? LANDLORD_NAV_ITEMS : PRIVATE_NAV_ITEMS), dashboardItem]
       : PRIVATE_NAV_ITEMS
     : PUBLIC_NAV_ITEMS;
+
+
+    // function to toggle mobile menu
+    const toggleMenu = () => {
+      setIsMenuOpen(!isMenuOpen);
+    };
+
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm sticky-top">
@@ -75,11 +98,12 @@ export default function NavBar() {
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#mainNav"
+          onClick={toggleMenu}
         >
-          <span className="navbar-toggler-icon" />
+          <span className="navbar-toggler-icon"></span>
         </button>
 
-        <div className="collapse navbar-collapse" id="mainNav">
+        <div className={`collapse navbar-collapse ${isMenuOpen ? 'show' : ''}`} id="mainNav">
 
           {/* Nav links */}
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
@@ -106,7 +130,7 @@ export default function NavBar() {
                   onClick={() => navigate("/profile")}
                 >
                   <span className={`badge bg-${ROLE_BADGES[dbUser.role]}`}>
-                    {dbUser.role.charAt(0).toUpperCase() + dbUser.role.slice(1)}
+                    {dbUser?.role ? dbUser.role.charAt(0).toUpperCase() + dbUser.role.slice(1) : "Guest"};
                   </span>
                   <span className="text-white fw-semibold small">{dbUser.name}</span>
                 </div>
@@ -127,7 +151,7 @@ export default function NavBar() {
                 </button>
                 <button
                   className="btn btn-light btn-sm fw-semibold"
-                  onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: "signup" } })}
+                  onClick={() => loginWithRedirect({ authorizationParams: { screen_hint: "signup", prompt: "login" } })}
                 >
                   <i className="bi bi-person-plus me-1" />Sign Up
                 </button>
