@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
 import { getMyJobs, contractorUpdateStatus } from "../../services/api";
 import JobUpdateStatusModal from "../../components/JobUpdateStatusModal";
 import Toast from "../../components/Toast";
@@ -121,6 +122,7 @@ function ViewModal({ job, onClose }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function MyJobs() {
   const { getAccessTokenSilently } = useAuth0();
+  const navigate = useNavigate();
 
   const [jobs,      setJobs]      = useState([]);
   const [loading,   setLoading]   = useState(true);
@@ -245,6 +247,13 @@ export default function MyJobs() {
                         onClick={() => setViewJob(j)}
                       >
                         <i className="bi bi-eye me-1" />View
+                      </button>
+                      <button
+                        className="btn btn-outline-success btn-sm"
+                        title="Message landlord"
+                        onClick={() => navigate("/messages", { state: { initialUserId: j.landlordId } })}
+                      >
+                        <i className="bi bi-chat-dots" />
                       </button>
                       <button
                         className="btn btn-outline-warning btn-sm flex-grow-1"
