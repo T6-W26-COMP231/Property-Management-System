@@ -16,7 +16,7 @@ const maintenanceRoutes   = require("./routes/maintenance");
 const notificationRoutes  = require("./routes/notifications");
 const ratingRoutes        = require("./routes/ratings");
 const { initSocket }      = require('./socket/socketHandler');
-// const { startLeaseReminderJob } = require("./jobs/leaseReminderJob");
+const { startLeaseReminderJob } = require("./jobs/leaseReminderJob");
 
 const app    = express();
 const server = http.createServer(app);
@@ -65,7 +65,7 @@ mongoose
     console.log("✅ MongoDB connected");
     server.listen(PORT, () => {
       console.log(`🚀 Server on http://localhost:${PORT}`);
-      // startLeaseReminderJob();        // 9:00 AM — production
+      startLeaseReminderJob();        // 9:00 AM — production
     });
   })
   .catch((err) => {
