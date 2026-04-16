@@ -16,7 +16,7 @@ const maintenanceRoutes   = require("./routes/maintenance");
 const notificationRoutes  = require("./routes/notifications");
 const ratingRoutes        = require("./routes/ratings");
 const { initSocket }      = require('./socket/socketHandler');
-const { startLeaseReminderJob } = require("./jobs/leaseReminderJob");
+// const { startLeaseReminderJob } = require("./jobs/leaseReminderJob");
 
 const app    = express();
 const server = http.createServer(app);
@@ -44,6 +44,14 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/ratings",       ratingRoutes);
 app.get("/health", (_, res) => res.json({ status: "ok" }));
 
+// ── Serve React frontend static files ────────────────────────────────────────
+const clientBuildPath = path.join(__dirname, "../frontend/dist");
+app.use(express.static(clientBuildPath));
+
+// ── All non-API routes → serve React index.html (client-side routing) ─────────
+app.use((req, res) => {
+  res.sendFile(path.join(clientBuildPath, "index.html"));
+});
 
 // ─── Socket.IO ────────────────────────────────────────────────────────────────
 initSocket(server);
@@ -57,7 +65,7 @@ mongoose
     console.log("✅ MongoDB connected");
     server.listen(PORT, () => {
       console.log(`🚀 Server on http://localhost:${PORT}`);
-      startLeaseReminderJob();        // 9:00 AM — production
+      // startLeaseReminderJob();        // 9:00 AM — production
     });
   })
   .catch((err) => {

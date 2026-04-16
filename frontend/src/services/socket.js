@@ -1,6 +1,8 @@
 import { io } from "socket.io-client";
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+// In dev: connect to localhost:3000
+// In production: connect to same origin (window.location.origin)
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || window.location.origin;
 
 let socket = null;
 
