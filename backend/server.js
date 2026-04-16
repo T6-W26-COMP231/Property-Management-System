@@ -44,6 +44,14 @@ app.use("/api/notifications", notificationRoutes);
 app.use("/api/ratings",       ratingRoutes);
 app.get("/health", (_, res) => res.json({ status: "ok" }));
 
+// ── Serve React frontend static files ────────────────────────────────────────
+const clientBuildPath = path.join(__dirname, "../frontend/dist");
+app.use(express.static(clientBuildPath));
+
+// ── All non-API routes → serve React index.html (client-side routing) ─────────
+app.use((req, res) => {
+  res.sendFile(path.join(clientBuildPath, "index.html"));
+});
 
 // ─── Socket.IO ────────────────────────────────────────────────────────────────
 initSocket(server);

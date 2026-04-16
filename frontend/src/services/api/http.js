@@ -1,5 +1,5 @@
 
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || "http://localhost:3000";
+const SERVER_URL = import.meta.env.VITE_SERVER_URL || "";
 
 const http = async (path, token, options = {}) => {
   const res = await fetch(`${SERVER_URL}${path}`, {
