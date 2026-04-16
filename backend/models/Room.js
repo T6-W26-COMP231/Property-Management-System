@@ -39,8 +39,8 @@ const RoomSchema = new mongoose.Schema(
 );
 
 // Fast lookup: find the room between two specific users
-// unique: true enforces only ONE room per pair at DB level
-RoomSchema.index({ participants: 1 }, { unique: true });
+// Index for fast lookup — uniqueness enforced by findOrCreateDM logic
+RoomSchema.index({ participants: 1 });
 
 // Find a DM room between two users (order doesn't matter)
 RoomSchema.statics.findDMRoom = function (userIdA, userIdB) {
