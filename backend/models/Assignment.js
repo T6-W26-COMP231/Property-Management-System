@@ -32,7 +32,7 @@ const AssignmentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// A resident can only be assigned to one property at a time
+// A resident can only be assigned t6o one property at a time
 AssignmentSchema.index({ residentId: 1 }, { unique: true });
 
 module.exports = mongoose.model("Assignment", AssignmentSchema);
