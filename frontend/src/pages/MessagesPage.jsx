@@ -4,6 +4,7 @@ import { useLocation } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import { getRooms, findOrCreateRoom, getMessages } from "../services/api";
 import { getSocket } from "../services/socket";
+import MessageBubble from "../components/MessageBubble";
 
 const DEFAULT_AVATAR = "https://placehold.co/40x40/cccccc/ffffff?text=?";
 
@@ -106,12 +107,35 @@ export default function MessagesPage() {
     if (!socket) return;
 
     socket.on("receive_dm", (msg) => {
-      // Only add message from the OTHER user — we already added ours optimistically
-      if (msg.senderId !== myId &&
-          msg.roomId?.toString() === activeRoom?.roomId?.toString()) {
+      if (msg.roomId?.toString() !== activeRoom?.roomId?.toString()) return;
+
+      if (msg.senderId === myId) {
+        // Replace the last optimistic message (temp _id) with the real saved one
+        setMessages((prev) => {
+          const idx = [...prev].reverse().findIndex(
+            (m) => typeof m._id === "number" && m.senderId === myId
+          );
+          if (idx === -1) return prev;
+          const realIdx = prev.length - 1 - idx;
+          const updated = [...prev];
+          updated[realIdx] = msg;
+          return updated;
+        });
+      } else {
+        // Message from other user — just append
         setMessages((prev) => [...prev, msg]);
       }
       loadRooms();
+    });
+
+    socket.on("message_deleted", ({ messageId }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id?.toString() === messageId?.toString()
+            ? { ...m, message: "This message was deleted", deleted: true }
+            : m
+        )
+      );
     });
 
     socket.on("user_typing", ({ isTyping: t }) => {
@@ -120,6 +144,7 @@ export default function MessagesPage() {
 
     return () => {
       socket.off("receive_dm");
+      socket.off("message_deleted");
       socket.off("user_typing");
     };
   }, [activeRoom?.roomId, myId]);
@@ -157,7 +182,13 @@ export default function MessagesPage() {
     setInput("");
   };
 
-  // ── Typing indicator ──────────────────────────────────────────────────────
+  // ── Delete message via socket ─────────────────────────────────────────────
+  const handleDelete = async (messageId) => {
+    if (!window.confirm("Delete this message?")) return;
+    const socket = getSocket();
+    if (!socket || !activeRoom) return;
+    socket.emit("delete_dm", { roomId: activeRoom.roomId, messageId });
+  };
   const handleTyping = (e) => {
     setInput(e.target.value);
     const socket = getSocket();
@@ -269,31 +300,14 @@ export default function MessagesPage() {
                 <small>No messages yet — say hello!</small>
               </div>
             ) : (
-              messages.map((msg) => {
-                const isMine = msg.senderId === myId;
-                return (
-                  <div
-                    key={msg._id}
-                    className={`d-flex mb-3 ${isMine ? "justify-content-end" : "justify-content-start"}`}
-                  >
-                    <div
-                      className={`px-3 py-2 rounded-3 ${isMine ? "bg-primary text-white" : "bg-white border"}`}
-                      style={{ maxWidth: "70%", wordBreak: "break-word" }}
-                    >
-                      <div style={{ fontSize: 14 }}>{msg.message}</div>
-                      <div
-                        className={`mt-1 ${isMine ? "text-white opacity-75" : "text-muted"}`}
-                        style={{ fontSize: 10 }}
-                      >
-                        {timeAgo(msg.createdAt)}
-                        {isMine && (
-                          <i className={`bi ${msg.read ? "bi-check2-all" : "bi-check2"} ms-1`} />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+              messages.map((msg) => (
+                <MessageBubble
+                  key={msg._id}
+                  msg={msg}
+                  isMine={msg.senderId === myId}
+                  onDelete={handleDelete}
+                />
+              ))
             )}
 
             {/* Typing indicator */}
