@@ -71,7 +71,7 @@ const runLeaseReminderJob = async () => {
  
 // ── Schedule: runs every day at 9:00 AM ──────────────────────────────────────
 const startLeaseReminderJob = () => {
-  cron.schedule("5 14 * * *", runLeaseReminderJob, {
+  cron.schedule("30 16 * * *", runLeaseReminderJob, {
     timezone: "America/Toronto",
   });
   console.log("📅 Lease reminder cron job scheduled (daily at 9:00 AM Toronto time)");
