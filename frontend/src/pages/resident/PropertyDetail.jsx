@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
+import { useNavigate } from "react-router-dom";
 import { getMyAssignment } from "../../services/api";
 
 const DEFAULT_IMAGE = "https://placehold.co/800x400/4A90D9/ffffff?text=No+Photo";
@@ -22,8 +23,9 @@ const downloadFile = async (url, fileName) => {
 
 export default function PropertyDetail() {
   const { getAccessTokenSilently } = useAuth0();
+  const navigate = useNavigate();
 
-  const [data,    setData]    = useState(null);  // { assignment, property, landlord }
+  const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState("");
 
@@ -145,7 +147,7 @@ export default function PropertyDetail() {
                   style={{ width: 56, height: 56, objectFit: "cover" }}
                 />
                 {/* Landlord info */}
-                <div>
+                <div className="flex-grow-1">
                   <div className="fw-semibold">
                     {landlord.name || "—"}
                   </div>
@@ -165,6 +167,14 @@ export default function PropertyDetail() {
                     </div>
                   )}
                 </div>
+                {/* Message button */}
+                <button
+                  className="btn btn-success btn-sm flex-shrink-0"
+                  title="Message landlord"
+                  onClick={() => navigate("/messages", { state: { initialUserId: landlord.auth0Id } })}
+                >
+                  <i className="bi bi-chat-dots me-1" />Message
+                </button>
               </div>
             </div>
 
@@ -209,5 +219,6 @@ export default function PropertyDetail() {
       </div>
 
     </div>
+
   );
 }
